@@ -110,9 +110,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm sticky top-20 z-10">
+      {/* Updated z-index to 40 to ensure it sits above KPI Card contents like the checkbox (z-10) */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm sticky top-[4.5rem] z-40">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">KPI Library: <span className="text-brand-600">{jobTitle}</span></h2>
+          <h2 className="text-xl font-bold text-slate-800">Library KPI: <span className="text-brand-600">{jobTitle}</span></h2>
           <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
             <span>{filteredKPIs.length} Ditampilkan</span>
             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>

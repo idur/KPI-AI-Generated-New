@@ -124,28 +124,35 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setMode(AppMode.AI_GENERATOR)}>
-            <div className="bg-brand-600 p-1.5 rounded-lg">
-              <Database className="w-6 h-6 text-white" />
+          {/* Logo / Title Area */}
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setMode(AppMode.AI_GENERATOR)}>
+            <div className="bg-brand-600 p-1.5 rounded-lg group-hover:bg-brand-700 transition-colors">
+              <Database className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">KPI Architect <span className="text-brand-600">AI</span></h1>
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+              Library <span className="text-brand-600">KPI</span>
+            </h1>
           </div>
-          <div className="flex gap-2">
+
+          {/* Navigation Area */}
+          <div className="flex gap-2 sm:gap-3">
             <button 
               onClick={() => setMode(AppMode.AI_GENERATOR)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${mode === AppMode.AI_GENERATOR ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${mode === AppMode.AI_GENERATOR ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <Bot className="w-4 h-4" />
-              AI Generator
+              <span className="hidden sm:inline">Generator</span>
+              <span className="sm:hidden">AI</span>
             </button>
              <button 
               onClick={() => setMode(AppMode.MY_LIBRARY)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${mode === AppMode.MY_LIBRARY ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${mode === AppMode.MY_LIBRARY ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <BookOpen className="w-4 h-4" />
-              My Library
+              <span className="hidden sm:inline">My Library</span>
+              <span className="sm:hidden">Library</span>
             </button>
           </div>
         </div>
@@ -153,7 +160,7 @@ function App() {
 
       {/* Contextual Success Message */}
       {successMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
+        <div className="fixed top-20 right-4 z-[60] bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
           {successMessage}
         </div>
       )}
@@ -162,8 +169,8 @@ function App() {
       {mode === AppMode.AI_GENERATOR && (
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Generate KPI Library Instan</h2>
-            <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Generate KPI Library Instan</h2>
+            <p className="text-slate-600 mb-8 max-w-2xl mx-auto text-sm sm:text-base">
               Masukkan Job Description, Role, atau upload dokumen JD Anda, dan AI akan merancang struktur KPI lengkap berdasarkan Balanced Scorecard.
             </p>
             <form onSubmit={handleGenerate} className="relative max-w-lg mx-auto">
@@ -172,8 +179,8 @@ function App() {
                   type="text" 
                   value={jobInput}
                   onChange={(e) => setJobInput(e.target.value)}
-                  placeholder={selectedFile ? "Tambahkan judul role atau konteks (opsional)..." : "Contoh: Digital Marketing Manager..."}
-                  className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-200 rounded-t-xl rounded-b-none shadow-sm text-lg focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all focus:z-10 relative"
+                  placeholder={selectedFile ? "Tambahkan konteks role (opsional)..." : "Contoh: Digital Marketing Manager..."}
+                  className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-200 rounded-t-xl rounded-b-none shadow-sm text-base sm:text-lg focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all focus:z-10 relative"
                 />
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-6 h-6 z-10" />
               </div>
@@ -182,22 +189,22 @@ function App() {
                   <div className="flex items-center gap-3 pl-2 overflow-hidden">
                     {selectedFile ? (
                       <>
-                        <div className="bg-white p-1.5 rounded shadow-sm text-brand-600">
+                        <div className="bg-white p-1.5 rounded shadow-sm text-brand-600 flex-shrink-0">
                             <FileText className="w-5 h-5" />
                         </div>
                         <div className="text-left overflow-hidden">
-                          <p className="text-sm font-medium text-slate-900 truncate max-w-[200px]">{selectedFile.name}</p>
+                          <p className="text-sm font-medium text-slate-900 truncate max-w-[150px] sm:max-w-[200px]">{selectedFile.name}</p>
                           <p className="text-xs text-slate-500">{(selectedFile.size / 1024).toFixed(0)} KB</p>
                         </div>
                       </>
                     ) : (
-                      <p className="text-sm text-slate-500 italic text-left">
+                      <p className="text-sm text-slate-500 italic text-left truncate">
                         Opsional: Upload file JD (PDF/TXT)
                       </p>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {selectedFile ? (
                       <button 
                         type="button"
@@ -248,8 +255,8 @@ function App() {
         {mode === AppMode.MY_LIBRARY ? (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-               <h2 className="text-2xl font-bold text-slate-900">My Library</h2>
-               <span className="text-slate-500 text-sm bg-slate-100 px-3 py-1 rounded-full">{libraryItems.length} Role Tersimpan</span>
+               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">My Library</h2>
+               <span className="text-slate-500 text-xs sm:text-sm bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">{libraryItems.length} Role</span>
             </div>
 
             {libraryItems.length === 0 ? (

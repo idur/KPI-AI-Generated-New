@@ -1,5 +1,5 @@
 {
-  "name": "KPI Architect AI",
+  "name": "Library KPI",
   "description": "Aplikasi KPI Library cerdas yang dapat menghasilkan KPI berdasarkan Job Description menggunakan Gemini AI, atau terhubung langsung ke data Google Sheet.",
   "requestFramePermissions": []
 }
