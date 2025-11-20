@@ -12,7 +12,7 @@ export enum Polarity {
 
 export interface KPI {
   id: string;
-  jobDescription: string;
+  jobDescription: string; // Maps to 'Jabatan'
   perspective: string; // BSC Perspective
   kpiName: string;
   type: string;
@@ -25,6 +25,9 @@ export interface KPI {
   measurement: string;
   targetAudience?: string;
   measurementChallenges?: string;
+  // New fields for PID Library
+  direktorat?: string;
+  divisi?: string;
 }
 
 export interface SheetConfig {

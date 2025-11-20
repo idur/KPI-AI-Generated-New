@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { KPI } from '../types';
-import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle } from 'lucide-react';
+import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle, Building2, Briefcase } from 'lucide-react';
 
 interface KPICardProps {
   kpi: KPI;
@@ -57,6 +58,14 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
           <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-brand-600 transition-colors pr-2">{kpi.kpiName}</h3>
           <p className="text-sm text-slate-600 mb-4 line-clamp-3">{kpi.detail}</p>
           
+          {/* Show Divisi in Card if available (Small badge) */}
+          {kpi.divisi && kpi.divisi !== '-' && (
+             <div className="mb-4 text-xs text-slate-500 flex items-center gap-1.5">
+               <Building2 className="w-3 h-3" />
+               <span className="truncate">{kpi.divisi}</span>
+             </div>
+          )}
+
           <div className="flex flex-wrap gap-3 text-xs text-slate-500 mt-auto">
             <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded" title="Satuan">
               <Target className="w-3.5 h-3.5" />
@@ -89,7 +98,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
           >
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
-              <div className="pr-8">
+              <div className="pr-8 w-full">
                 <div className="flex items-center gap-3 mb-2">
                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPerspectiveColor(kpi.perspective)}`}>
                     {kpi.perspective}
@@ -98,10 +107,32 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                     {kpi.type}
                   </span>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 leading-tight">{kpi.kpiName}</h2>
-                <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">
-                  <span className="font-medium">Role:</span> {kpi.jobDescription}
-                </p>
+                <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-2">{kpi.kpiName}</h2>
+                
+                {/* Organization Context for PID Library */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+                   {kpi.direktorat && kpi.direktorat !== '-' && (
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-slate-400" />
+                        <span className="font-medium text-slate-700">{kpi.direktorat}</span>
+                      </span>
+                   )}
+                   {kpi.divisi && kpi.divisi !== '-' && (
+                      <>
+                        <span className="text-slate-300 hidden sm:inline">|</span>
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-slate-400" />
+                          <span className="font-medium text-slate-700">{kpi.divisi}</span>
+                        </span>
+                      </>
+                   )}
+                   <span className="text-slate-300 hidden sm:inline">|</span>
+                   <span className="flex items-center gap-1.5">
+                      <Briefcase className="w-4 h-4 text-slate-400" />
+                      <span className="font-medium text-slate-700">{kpi.jobDescription}</span>
+                   </span>
+                </div>
+
               </div>
               <button 
                 onClick={() => setShowModal(false)}
@@ -183,7 +214,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   </div>
                 </div>
 
-                {/* Extended Analysis (Target Audience & Challenges) */}
+                {/* Extended Analysis (Target Audience & Challenges) - Usually from AI, but PID might not have these */}
                 {(kpi.targetAudience || kpi.measurementChallenges) && (
                   <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 mt-4">
                     {kpi.targetAudience && (

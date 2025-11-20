@@ -2,13 +2,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateKPIsFromJobDescription } from './services/geminiService';
 import { getLibrary, saveToLibrary, deleteFromLibrary } from './services/libraryService';
+import { fetchPIDLibrary } from './services/sheetService';
 import { KPI, LibraryEntry } from './types';
 import { Dashboard } from './components/Dashboard';
-import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table } from 'lucide-react';
+import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw } from 'lucide-react';
 
 enum AppMode {
   AI_GENERATOR = 'AI Generator',
-  MY_LIBRARY = 'My Library'
+  MY_LIBRARY = 'My Library',
+  PID_LIBRARY = 'PID Library'
 }
 
 function App() {
@@ -27,10 +29,29 @@ function App() {
   // Library State
   const [libraryItems, setLibraryItems] = useState<LibraryEntry[]>([]);
 
+  // PID Library State
+  const [pidPassword, setPidPassword] = useState('');
+  const [isPidAuthenticated, setIsPidAuthenticated] = useState(false);
+  // Removed sheetUrl state as it's now backend/service managed
+  const [sheetJobFilter, setSheetJobFilter] = useState('');
+
+  // Handle URL Routing for /pid
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/pid') {
+      setMode(AppMode.PID_LIBRARY);
+    }
+  }, []);
+
   // Load library when mode changes to My Library
   useEffect(() => {
     if (mode === AppMode.MY_LIBRARY) {
       setLibraryItems(getLibrary());
+    }
+    // Clear KPIs when switching modes to avoid confusion, unless switching to PID and already loaded
+    if (mode === AppMode.AI_GENERATOR) {
+      setKpis([]);
+      setCurrentJobTitle('');
     }
   }, [mode]);
 
@@ -121,6 +142,45 @@ function App() {
     }
   };
 
+  // --- PID Logic ---
+  
+  const loadPidData = async (filter: string = '') => {
+    setLoading(true);
+    setError(null);
+    setKpis([]);
+    
+    try {
+      // Call the service which holds the hardcoded URL
+      const data = await fetchPIDLibrary(filter);
+      if (data.length === 0) {
+        throw new Error("Data kosong atau tidak ditemukan.");
+      }
+      setKpis(data);
+      setCurrentJobTitle(filter ? `PID: ${filter}` : "PID Master Library");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePidLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pidPassword === 'pid2025') {
+      setIsPidAuthenticated(true);
+      setError(null);
+      // Auto-fetch data on successful login
+      await loadPidData(sheetJobFilter);
+    } else {
+      setError("Password salah. Akses ditolak.");
+    }
+  };
+
+  const handlePidFilterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadPidData(sheetJobFilter);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header */}
@@ -137,10 +197,10 @@ function App() {
           </div>
 
           {/* Navigation Area */}
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto">
             <button 
               onClick={() => setMode(AppMode.AI_GENERATOR)}
-              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${mode === AppMode.AI_GENERATOR ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.AI_GENERATOR ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">Generator</span>
@@ -148,11 +208,19 @@ function App() {
             </button>
              <button 
               onClick={() => setMode(AppMode.MY_LIBRARY)}
-              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${mode === AppMode.MY_LIBRARY ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.MY_LIBRARY ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">My Library</span>
-              <span className="sm:hidden">Library</span>
+              <span className="sm:hidden">Lib</span>
+            </button>
+            <button 
+              onClick={() => setMode(AppMode.PID_LIBRARY)}
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.PID_LIBRARY ? 'bg-slate-800 text-white ring-1 ring-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <Lock className="w-4 h-4" />
+              <span className="hidden sm:inline">PID Library</span>
+              <span className="sm:hidden">PID</span>
             </button>
           </div>
         </div>
@@ -165,7 +233,7 @@ function App() {
         </div>
       )}
 
-      {/* Input Section - Only show for Generator mode (not Library) */}
+      {/* --- AI GENERATOR MODE INPUT --- */}
       {mode === AppMode.AI_GENERATOR && (
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-4 py-12 text-center">
@@ -252,7 +320,8 @@ function App() {
           </div>
         )}
 
-        {mode === AppMode.MY_LIBRARY ? (
+        {/* --- MY LIBRARY MODE --- */}
+        {mode === AppMode.MY_LIBRARY && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">My Library</h2>
@@ -314,7 +383,110 @@ function App() {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {/* --- PID LIBRARY MODE --- */}
+        {mode === AppMode.PID_LIBRARY && (
+          <div className="space-y-6">
+            {!isPidAuthenticated ? (
+              <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 mt-10">
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                    <Lock className="w-6 h-6 text-slate-700" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Restricted Access</h2>
+                  <p className="text-slate-500 mt-2">Area PID Library dilindungi password.</p>
+                </div>
+                <form onSubmit={handlePidLogin}>
+                  <div className="mb-4 relative">
+                    <input
+                      type="password"
+                      value={pidPassword}
+                      onChange={(e) => setPidPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                      placeholder="Masukkan password akses..."
+                    />
+                    <Key className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  </div>
+                  <button 
+                    type="submit"
+                    className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    Masuk
+                  </button>
+                </form>
+              </div>
+            ) : (
+              // Authenticated View
+              <>
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                     <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-100 rounded-lg">
+                          <Table className="w-6 h-6 text-slate-700" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold text-slate-900">Master PID Library</h2>
+                          <p className="text-sm text-slate-500">Data terhubung ke Pusat Data PID.</p>
+                        </div>
+                     </div>
+
+                     {/* Simple Filter Form */}
+                     <form onSubmit={handlePidFilterSubmit} className="flex gap-2 w-full sm:w-auto">
+                        <input 
+                          type="text" 
+                          value={sheetJobFilter}
+                          onChange={(e) => setSheetJobFilter(e.target.value)}
+                          placeholder="Cari Jabatan/Posisi..."
+                          className="flex-1 sm:w-64 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm"
+                        />
+                        <button 
+                          type="submit" 
+                          disabled={loading}
+                          className="px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        </button>
+                     </form>
+                   </div>
+                </div>
+                
+                {/* Loading Indicator */}
+                {loading && (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-slate-400 mx-auto mb-2" />
+                    <p className="text-slate-500">Sedang memuat data dari PID Database...</p>
+                  </div>
+                )}
+
+                {/* Reuse Dashboard if data is present */}
+                {!loading && kpis.length > 0 && (
+                  <Dashboard 
+                    kpis={kpis}
+                    jobTitle={currentJobTitle}
+                    onSaveToLibrary={handleSaveToLibrary}
+                  />
+                )}
+
+                {/* Empty State / Error Retry */}
+                {!loading && kpis.length === 0 && !error && (
+                  <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                    <p className="text-slate-500 mb-4">Data tidak ditemukan untuk filter tersebut.</p>
+                    <button 
+                      onClick={() => loadPidData('')}
+                      className="text-sm font-medium text-slate-700 flex items-center justify-center gap-2 mx-auto hover:text-slate-900"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Reset Filter & Reload
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* --- AI GENERATOR DASHBOARD --- */}
+        {mode === AppMode.AI_GENERATOR && (
           <Dashboard 
             kpis={kpis} 
             jobTitle={currentJobTitle || 'Draft'}
