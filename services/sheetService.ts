@@ -1,39 +1,32 @@
 
 import { KPI } from "../types";
 
-// Helper function to safely get environment variables
-// Mencoba membaca dari berbagai pola prefix (VITE_, REACT_APP_, atau tanpa prefix)
-const getEnvVar = (key: string): string | undefined => {
-  // 1. Try import.meta.env (Vite standard)
-  try {
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-ignore
-      const val = import.meta.env[`VITE_${key}`] || import.meta.env[key];
-      if (val) return val;
-    }
-  } catch (e) {}
+// --- KONFIGURASI "BACKEND" ---
+// PENTING: Di Vite, kita harus mengakses variabel secara eksplisit/statis (dot notation)
+// agar bundler dapat menggantinya dengan nilai string saat build time.
+// Akses dinamis seperti `import.meta.env[key]` seringkali gagal di production.
 
-  // 2. Try process.env (Node/Webpack/CRA compatibility)
-  try {
+const getSheetUrl = () => {
+  // 1. Coba ambil dari VITE_PID_SHEET_URL (Standard Vite)
+  // @ts-ignore
+  if (import.meta.env && import.meta.env.VITE_PID_SHEET_URL) {
     // @ts-ignore
-    if (typeof process !== 'undefined' && process.env) {
-       // @ts-ignore
-       const val = process.env[`VITE_${key}`] || process.env[`REACT_APP_${key}`] || process.env[key];
-       if (val) return val;
-    }
-  } catch (e) {}
-
-  return undefined;
+    return import.meta.env.VITE_PID_SHEET_URL;
+  }
+  // 2. Fallback jika ada konfigurasi process.env manual
+  // @ts-ignore
+  if (typeof process !== 'undefined' && process.env && process.env.VITE_PID_SHEET_URL) {
+    // @ts-ignore
+    return process.env.VITE_PID_SHEET_URL;
+  }
+  
+  return "";
 };
 
-// --- KONFIGURASI "BACKEND" ---
-// Mengambil URL secara otomatis dari Environment Variable
-const ENV_SHEET_URL = getEnvVar('PID_SHEET_URL');
+const ENV_SHEET_URL = getSheetUrl();
 
 const PID_SHEET_CONFIG = {
-  // Jika Env Var tidak ditemukan, fallback ke string kosong (nanti akan dicek di fungsi fetch)
-  url: ENV_SHEET_URL || "" 
+  url: ENV_SHEET_URL
 };
 
 // Helper to parse CSV line respecting quotes
@@ -135,10 +128,11 @@ export const fetchPIDLibrary = async (jobFilter: string): Promise<KPI[]> => {
   const configUrl = PID_SHEET_CONFIG.url;
   
   // Validasi URL
-  if (!configUrl || configUrl.includes("GANTI_DENGAN") || configUrl.trim() === "") {
+  if (!configUrl || configUrl.trim() === "") {
+    console.error("Environment Variable VITE_PID_SHEET_URL kosong.");
     throw new Error(
       "URL Google Sheet tidak ditemukan.\n" +
-      "Mohon set Environment Variable 'PID_SHEET_URL' atau 'VITE_PID_SHEET_URL' pada setting hosting Anda (Netlify/Vercel)."
+      "Mohon set Environment Variable 'VITE_PID_SHEET_URL' pada Netlify, lalu Trigger New Deploy (Rebuild)."
     );
   }
   return fetchGoogleSheetData(configUrl, jobFilter);
