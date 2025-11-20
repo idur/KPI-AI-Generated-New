@@ -1,14 +1,39 @@
 
 import { KPI } from "../types";
 
+// Helper function to safely get environment variables
+// Mencoba membaca dari berbagai pola prefix (VITE_, REACT_APP_, atau tanpa prefix)
+const getEnvVar = (key: string): string | undefined => {
+  // 1. Try import.meta.env (Vite standard)
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      const val = import.meta.env[`VITE_${key}`] || import.meta.env[key];
+      if (val) return val;
+    }
+  } catch (e) {}
+
+  // 2. Try process.env (Node/Webpack/CRA compatibility)
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env) {
+       // @ts-ignore
+       const val = process.env[`VITE_${key}`] || process.env[`REACT_APP_${key}`] || process.env[key];
+       if (val) return val;
+    }
+  } catch (e) {}
+
+  return undefined;
+};
+
 // --- KONFIGURASI "BACKEND" ---
-// Ganti URL di bawah ini dengan Link Google Sheet PID Anda.
-// Pastikan Sheet sudah di-Share "Anyone with the link can view" 
-// ATAU "File > Share > Publish to web > Format: CSV" (Disarankan Publish to Web untuk performa lebih cepat)
+// Mengambil URL secara otomatis dari Environment Variable
+const ENV_SHEET_URL = getEnvVar('PID_SHEET_URL');
+
 const PID_SHEET_CONFIG = {
-  // Contoh format Publish to Web: "https://docs.google.com/spreadsheets/d/e/2PACX-..../pub?output=csv"
-  // Contoh format Biasa: "https://docs.google.com/spreadsheets/d/1xAbC..../edit?usp=sharing"
-  url: "GANTI_DENGAN_URL_GOOGLE_SHEET_ANDA_DISINI" 
+  // Jika Env Var tidak ditemukan, fallback ke string kosong (nanti akan dicek di fungsi fetch)
+  url: ENV_SHEET_URL || "" 
 };
 
 // Helper to parse CSV line respecting quotes
@@ -55,7 +80,7 @@ export const fetchGoogleSheetData = async (url: string, jobFilter: string): Prom
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
       
-      // PID Library Format Mapping:
+      // PID Library Format Mapping (13 Columns):
       // 0: Direktorat
       // 1: Divisi
       // 2: Jabatan
@@ -70,10 +95,9 @@ export const fetchGoogleSheetData = async (url: string, jobFilter: string): Prom
       // 11: Sample Formula
       // 12: Pengukuran
       
-      // Ensure we have enough columns (at least 5 to be safe)
       if (cols.length < 5) continue; 
 
-      const rowJob = cols[2]?.replace(/^"|"$/g, '') || 'Unknown Job'; // Jabatan is at index 2
+      const rowJob = cols[2]?.replace(/^"|"$/g, '') || 'Unknown Job'; 
       
       // If filtering by job, skip non-matches
       if (jobFilter && !rowJob.toLowerCase().includes(jobFilter.toLowerCase())) {
@@ -83,7 +107,6 @@ export const fetchGoogleSheetData = async (url: string, jobFilter: string): Prom
       data.push({
         id: Math.random().toString(36).substr(2, 9),
         
-        // Map columns specifically for PID Library
         direktorat: cols[0]?.replace(/^"|"$/g, '') || '-',
         divisi: cols[1]?.replace(/^"|"$/g, '') || '-',
         jobDescription: rowJob,
@@ -103,14 +126,20 @@ export const fetchGoogleSheetData = async (url: string, jobFilter: string): Prom
     return data;
   } catch (error) {
     console.error("Sheet Fetch Error:", error);
-    throw new Error("Gagal mengambil data. Pastikan URL Google Sheet di konfigurasi valid dan dapat diakses publik (CSV).");
+    throw new Error("Gagal mengambil data dari Google Sheet. Pastikan URL benar dan Sheet dipublish sebagai CSV.");
   }
 };
 
-// Fungsi khusus untuk PID Library yang menggunakan URL tersembunyi (Hardcoded)
+// Fungsi khusus untuk PID Library
 export const fetchPIDLibrary = async (jobFilter: string): Promise<KPI[]> => {
-  if (!PID_SHEET_CONFIG.url || PID_SHEET_CONFIG.url.includes("GANTI_DENGAN")) {
-    throw new Error("Konfigurasi URL Google Sheet belum di-set oleh Admin.");
+  const configUrl = PID_SHEET_CONFIG.url;
+  
+  // Validasi URL
+  if (!configUrl || configUrl.includes("GANTI_DENGAN") || configUrl.trim() === "") {
+    throw new Error(
+      "URL Google Sheet tidak ditemukan.\n" +
+      "Mohon set Environment Variable 'PID_SHEET_URL' atau 'VITE_PID_SHEET_URL' pada setting hosting Anda (Netlify/Vercel)."
+    );
   }
-  return fetchGoogleSheetData(PID_SHEET_CONFIG.url, jobFilter);
+  return fetchGoogleSheetData(configUrl, jobFilter);
 };
