@@ -8,11 +8,19 @@ export const generateKPIsFromJobDescription = async (
   jobDescription: string,
   fileData?: { base64: string; mimeType: string }
 ): Promise<KPI[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing");
+  
+  // Retrieve API Key: Support both VITE_API_KEY (for Netlify/Vite) and standard API_KEY
+  // @ts-ignore
+  const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) 
+    // @ts-ignore
+    ? import.meta.env.VITE_API_KEY 
+    : process.env.API_KEY;
+
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please set 'VITE_API_KEY' in your Netlify Environment Variables.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: apiKey });
 
   let promptText = `
     Bertindaklah sebagai konsultan HR expert. Buatlah daftar Key Performance Indicators (KPI) yang komprehensif untuk Job Description / Role berikut: "${jobDescription}".
