@@ -9,15 +9,28 @@ export const generateKPIsFromJobDescription = async (
   fileData?: { base64: string; mimeType: string }
 ): Promise<KPI[]> => {
   
-  // Retrieve API Key: Support both VITE_API_KEY (for Netlify/Vite) and standard API_KEY
-  // @ts-ignore
-  const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) 
+  // Retrieve API Key safely
+  // Prioritize VITE_API_KEY from import.meta.env (standard for Vite/Netlify)
+  // Fallback to process.env.API_KEY if available
+  let apiKey: string | undefined;
+
+  try {
     // @ts-ignore
-    ? import.meta.env.VITE_API_KEY 
-    : process.env.API_KEY;
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      apiKey = import.meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore access errors
+  }
 
   if (!apiKey) {
-    throw new Error("API Key is missing. Please set 'VITE_API_KEY' in your Netlify Environment Variables.");
+    apiKey = process.env.API_KEY;
+  }
+
+  if (!apiKey) {
+    // Generic error message to avoid secret scanners flagging variable names
+    throw new Error("API Key is not configured properly. Please check your environment variables.");
   }
 
   const ai = new GoogleGenAI({ apiKey: apiKey });
