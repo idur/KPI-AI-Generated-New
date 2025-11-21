@@ -1,11 +1,11 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { generateKPIsFromJobDescription } from './services/geminiService';
 import { getLibrary, saveToLibrary, deleteFromLibrary } from './services/libraryService';
 import { fetchPIDLibrary } from './services/sheetService';
 import { KPI, LibraryEntry } from './types';
 import { Dashboard } from './components/Dashboard';
-import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw } from 'lucide-react';
+import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw, Building2, Users, Briefcase, Settings } from 'lucide-react';
 
 enum AppMode {
   AI_GENERATOR = 'AI Generator',
@@ -16,7 +16,11 @@ enum AppMode {
 function App() {
   const [mode, setMode] = useState<AppMode>(AppMode.AI_GENERATOR);
   const [loading, setLoading] = useState(false);
-  const [kpis, setKpis] = useState<KPI[]>([]);
+  
+  // KPI Data State
+  const [masterKpis, setMasterKpis] = useState<KPI[]>([]); // All data from sheet
+  const [kpis, setKpis] = useState<KPI[]>([]); // Displayed/Filtered data
+  
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
@@ -32,14 +36,27 @@ function App() {
   // PID Library State
   const [pidPassword, setPidPassword] = useState('');
   const [isPidAuthenticated, setIsPidAuthenticated] = useState(false);
-  // Removed sheetUrl state as it's now backend/service managed
-  const [sheetJobFilter, setSheetJobFilter] = useState('');
+  const [pidSheetUrl, setPidSheetUrl] = useState('');
+  const [showPidSettings, setShowPidSettings] = useState(false);
+  
+  // PID Filters State
+  const [pidFilters, setPidFilters] = useState({
+    direktorat: '',
+    divisi: '',
+    jabatan: '' // Text search
+  });
 
   // Handle URL Routing for /pid
   useEffect(() => {
     const path = window.location.pathname;
     if (path === '/pid') {
       setMode(AppMode.PID_LIBRARY);
+    }
+    
+    // Load saved Sheet URL
+    const savedUrl = localStorage.getItem('pid_sheet_url');
+    if (savedUrl) {
+      setPidSheetUrl(savedUrl);
     }
   }, []);
 
@@ -48,12 +65,68 @@ function App() {
     if (mode === AppMode.MY_LIBRARY) {
       setLibraryItems(getLibrary());
     }
-    // Clear KPIs when switching modes to avoid confusion, unless switching to PID and already loaded
+    // Clear KPIs when switching modes to avoid confusion
     if (mode === AppMode.AI_GENERATOR) {
       setKpis([]);
       setCurrentJobTitle('');
     }
   }, [mode]);
+
+  // --- FILTER LOGIC FOR PID ---
+  
+  // Extract unique values for Dropdowns based on Master Data
+  const uniqueDirektorats = useMemo(() => {
+    const dirs = masterKpis.map(k => k.direktorat).filter(d => d && d !== '-' && d.trim() !== '');
+    return Array.from(new Set(dirs)).sort();
+  }, [masterKpis]);
+
+  const uniqueDivisis = useMemo(() => {
+    // If a Directorate is selected, filter divisions belonging to it. Otherwise show all.
+    let relevantKpis = masterKpis;
+    if (pidFilters.direktorat) {
+      relevantKpis = masterKpis.filter(k => k.direktorat === pidFilters.direktorat);
+    }
+    const divs = relevantKpis.map(k => k.divisi).filter(d => d && d !== '-' && d.trim() !== '');
+    return Array.from(new Set(divs)).sort();
+  }, [masterKpis, pidFilters.direktorat]);
+
+  // Apply filters whenever filter state or master data changes
+  useEffect(() => {
+    if (mode !== AppMode.PID_LIBRARY || masterKpis.length === 0) return;
+
+    let result = masterKpis;
+
+    // 1. Filter by Direktorat
+    if (pidFilters.direktorat) {
+      result = result.filter(k => k.direktorat === pidFilters.direktorat);
+    }
+
+    // 2. Filter by Divisi
+    if (pidFilters.divisi) {
+      result = result.filter(k => k.divisi === pidFilters.divisi);
+    }
+
+    // 3. Filter by Jabatan (Search Text)
+    if (pidFilters.jabatan) {
+      const search = pidFilters.jabatan.toLowerCase();
+      result = result.filter(k => k.jobDescription.toLowerCase().includes(search));
+    }
+
+    setKpis(result);
+    
+    // Update title dynamically
+    if (pidFilters.jabatan) {
+      setCurrentJobTitle(`PID: ${pidFilters.jabatan}`);
+    } else if (pidFilters.divisi) {
+      setCurrentJobTitle(`PID: ${pidFilters.divisi}`);
+    } else if (pidFilters.direktorat) {
+      setCurrentJobTitle(`PID: ${pidFilters.direktorat}`);
+    } else {
+      setCurrentJobTitle("PID Master Library");
+    }
+
+  }, [pidFilters, masterKpis, mode]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -94,6 +167,7 @@ function App() {
     setError(null);
     setSuccessMessage(null);
     setKpis([]);
+    setMasterKpis([]); // Clear master in AI mode
     
     try {
       let fileData = undefined;
@@ -107,6 +181,7 @@ function App() {
 
       const result = await generateKPIsFromJobDescription(jobInput, fileData);
       setKpis(result);
+      setMasterKpis(result); // In AI mode, master is just the result
       setCurrentJobTitle(jobInput || selectedFile?.name || "Generated Result");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat generate KPI.");
@@ -129,6 +204,7 @@ function App() {
 
   const handleLoadLibraryItem = (item: LibraryEntry) => {
     setKpis(item.kpis);
+    setMasterKpis(item.kpis);
     setCurrentJobTitle(item.jobTitle);
     setMode(AppMode.AI_GENERATOR); // Switch to main view to see the dashboard
     window.scrollTo(0, 0);
@@ -144,21 +220,29 @@ function App() {
 
   // --- PID Logic ---
   
-  const loadPidData = async (filter: string = '') => {
+  const loadPidData = async () => {
     setLoading(true);
     setError(null);
     setKpis([]);
+    setMasterKpis([]);
     
     try {
-      // Call the service which holds the hardcoded URL
-      const data = await fetchPIDLibrary(filter);
+      // Pass the custom URL if available
+      const data = await fetchPIDLibrary(pidSheetUrl);
       if (data.length === 0) {
         throw new Error("Data kosong atau tidak ditemukan.");
       }
+      setMasterKpis(data);
       setKpis(data);
-      setCurrentJobTitle(filter ? `PID: ${filter}` : "PID Master Library");
+      setCurrentJobTitle("PID Master Library");
+      setShowPidSettings(false); // Close settings on success
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === "MISSING_URL") {
+        setError("URL Google Sheet belum dikonfigurasi. Silakan masukkan URL di Pengaturan.");
+        setShowPidSettings(true);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -169,16 +253,21 @@ function App() {
     if (pidPassword === 'pid2025') {
       setIsPidAuthenticated(true);
       setError(null);
-      // Auto-fetch data on successful login
-      await loadPidData(sheetJobFilter);
+      // Auto-fetch ALL data on successful login
+      await loadPidData();
     } else {
       setError("Password salah. Akses ditolak.");
     }
   };
 
-  const handlePidFilterSubmit = (e: React.FormEvent) => {
+  const handleSaveSheetUrl = (e: React.FormEvent) => {
     e.preventDefault();
-    loadPidData(sheetJobFilter);
+    localStorage.setItem('pid_sheet_url', pidSheetUrl);
+    loadPidData();
+  };
+
+  const handleResetFilters = () => {
+    setPidFilters({ direktorat: '', divisi: '', jabatan: '' });
   };
 
   return (
@@ -419,35 +508,126 @@ function App() {
             ) : (
               // Authenticated View
               <>
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-100 rounded-lg">
-                          <Table className="w-6 h-6 text-slate-700" />
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900">Master PID Library</h2>
-                          <p className="text-sm text-slate-500">Data terhubung ke Pusat Data PID.</p>
-                        </div>
-                     </div>
+                {/* Toggle Settings Button */}
+                <div className="flex justify-end mb-2">
+                   <button 
+                    onClick={() => setShowPidSettings(!showPidSettings)}
+                    className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-sm font-medium transition-colors"
+                   >
+                      <Settings className="w-4 h-4" />
+                      <span>Pengaturan Database</span>
+                   </button>
+                </div>
 
-                     {/* Simple Filter Form */}
-                     <form onSubmit={handlePidFilterSubmit} className="flex gap-2 w-full sm:w-auto">
+                {/* Settings Panel */}
+                {showPidSettings && (
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 animate-in slide-in-from-top-2">
+                    <h3 className="font-bold text-slate-900 mb-4">Konfigurasi Database PID</h3>
+                    <form onSubmit={handleSaveSheetUrl}>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Google Sheet CSV URL
+                      </label>
+                      <div className="flex gap-2">
                         <input 
                           type="text" 
-                          value={sheetJobFilter}
-                          onChange={(e) => setSheetJobFilter(e.target.value)}
-                          placeholder="Cari Jabatan/Posisi..."
-                          className="flex-1 sm:w-64 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm"
+                          value={pidSheetUrl}
+                          onChange={(e) => setPidSheetUrl(e.target.value)}
+                          placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                          className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
                         />
                         <button 
-                          type="submit" 
-                          disabled={loading}
-                          className="px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center"
+                          type="submit"
+                          className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors whitespace-nowrap"
                         >
-                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                          Simpan & Reload
                         </button>
-                     </form>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Pastikan Google Sheet telah di-"Publish to Web" sebagai CSV. Jika kosong, aplikasi akan mencoba menggunakan Environment Variable.
+                      </p>
+                    </form>
+                  </div>
+                )}
+
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                   <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-slate-100 rounded-lg">
+                        <Table className="w-6 h-6 text-slate-700" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">Master PID Library</h2>
+                        <p className="text-sm text-slate-500">Filter data berdasarkan struktur organisasi.</p>
+                      </div>
+                   </div>
+
+                   {/* Filter Filters Grid */}
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      
+                      {/* Filter Direktorat */}
+                      <div className="relative">
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Direktorat</label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <select 
+                            value={pidFilters.direktorat}
+                            onChange={(e) => setPidFilters(prev => ({...prev, direktorat: e.target.value, divisi: ''}))} // Reset division when directorate changes
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm appearance-none bg-white"
+                            disabled={loading || masterKpis.length === 0}
+                          >
+                            <option value="">Semua Direktorat</option>
+                            {uniqueDirektorats.map(dir => (
+                              <option key={dir} value={dir}>{dir}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Filter Divisi */}
+                      <div className="relative">
+                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Divisi</label>
+                         <div className="relative">
+                            <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <select 
+                              value={pidFilters.divisi}
+                              onChange={(e) => setPidFilters(prev => ({...prev, divisi: e.target.value}))}
+                              className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm appearance-none bg-white"
+                              disabled={loading || masterKpis.length === 0}
+                            >
+                              <option value="">Semua Divisi</option>
+                              {uniqueDivisis.map(div => (
+                                <option key={div} value={div}>{div}</option>
+                              ))}
+                            </select>
+                         </div>
+                      </div>
+
+                      {/* Filter Jabatan */}
+                      <div className="relative">
+                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Jabatan</label>
+                         <div className="relative">
+                           <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                           <input 
+                              type="text" 
+                              value={pidFilters.jabatan}
+                              onChange={(e) => setPidFilters(prev => ({...prev, jabatan: e.target.value}))}
+                              placeholder="Cari Nama Jabatan..."
+                              className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm"
+                              disabled={loading || masterKpis.length === 0}
+                            />
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Reset Button */}
+                   <div className="flex justify-end mt-4">
+                      <button 
+                        onClick={handleResetFilters}
+                        className="text-sm text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1.5"
+                        disabled={loading}
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Reset Filter
+                      </button>
                    </div>
                 </div>
                 
@@ -471,12 +651,12 @@ function App() {
                 {/* Empty State / Error Retry */}
                 {!loading && kpis.length === 0 && !error && (
                   <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
-                    <p className="text-slate-500 mb-4">Data tidak ditemukan untuk filter tersebut.</p>
+                    <p className="text-slate-500 mb-4">Data tidak ditemukan untuk kombinasi filter tersebut.</p>
                     <button 
-                      onClick={() => loadPidData('')}
+                      onClick={handleResetFilters}
                       className="text-sm font-medium text-slate-700 flex items-center justify-center gap-2 mx-auto hover:text-slate-900"
                     >
-                      <RefreshCw className="w-4 h-4" /> Reset Filter & Reload
+                      <RefreshCw className="w-4 h-4" /> Reset Filter
                     </button>
                   </div>
                 )}
