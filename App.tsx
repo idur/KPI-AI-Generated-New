@@ -5,7 +5,7 @@ import { getLibrary, saveToLibrary, deleteFromLibrary } from './services/library
 import { fetchPIDLibrary } from './services/sheetService';
 import { KPI, LibraryEntry } from './types';
 import { Dashboard } from './components/Dashboard';
-import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw, Building2, Users, Briefcase, Settings } from 'lucide-react';
+import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw, Building2, Users, Briefcase, Settings, Info } from 'lucide-react';
 
 enum AppMode {
   AI_GENERATOR = 'AI Generator',
@@ -415,6 +415,15 @@ function App() {
             <div className="flex justify-between items-center">
                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">My Library</h2>
                <span className="text-slate-500 text-xs sm:text-sm bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">{libraryItems.length} Role</span>
+            </div>
+
+            {/* --- Local Storage Disclaimer --- */}
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-800 leading-relaxed">
+                <strong>Perhatian:</strong> Data "My Library" tersimpan secara lokal di browser perangkat ini (Local Storage). 
+                Data tidak disinkronkan ke akun cloud atau perangkat lain. Jika Anda membersihkan cache browser atau berganti perangkat, data ini akan hilang.
+              </p>
             </div>
 
             {libraryItems.length === 0 ? (
