@@ -65,11 +65,8 @@ function App() {
     if (mode === AppMode.MY_LIBRARY) {
       setLibraryItems(getLibrary());
     }
-    // Clear KPIs when switching modes to avoid confusion
-    if (mode === AppMode.AI_GENERATOR) {
-      setKpis([]);
-      setCurrentJobTitle('');
-    }
+    // Removed auto-clearing of KPIs when switching to AI_GENERATOR.
+    // This allows data loaded from My Library to persist when the view switches.
   }, [mode]);
 
   // --- FILTER LOGIC FOR PID ---
@@ -206,6 +203,7 @@ function App() {
     setKpis(item.kpis);
     setMasterKpis(item.kpis);
     setCurrentJobTitle(item.jobTitle);
+    setJobInput(item.jobTitle); // Update input field context
     setMode(AppMode.AI_GENERATOR); // Switch to main view to see the dashboard
     window.scrollTo(0, 0);
   };
