@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { generateKPIsFromJobDescription } from './services/geminiService';
 import { getLibrary, saveToLibrary, deleteFromLibrary } from './services/libraryService';
@@ -198,10 +197,8 @@ function App() {
         setCurrentJobTitle(mainRole || "Multi-Role Import");
 
         // --- BATCH PROCESSING START ---
-        const BATCH_SIZE = 5; // Safe number to prevent token limits (5 tasks * 2 KPIs = 10 items)
-        
-        // Removed 'allGeneratedKpis' accumulator variable. 
-        // We will update state directly for incremental rendering.
+        // Increased batch size to 10 for faster processing
+        const BATCH_SIZE = 10; 
         
         const totalBatches = Math.ceil(parsedRows.length / BATCH_SIZE);
 

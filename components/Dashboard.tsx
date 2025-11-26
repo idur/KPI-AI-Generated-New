@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { KPI } from '../types';
 import { KPICard } from './KPICard';
-import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark } from 'lucide-react';
+import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark, Briefcase, Building2, Users } from 'lucide-react';
 
 interface DashboardProps {
   kpis: KPI[];
@@ -11,18 +10,51 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLibrary }) => {
+  // Filter States
   const [selectedPerspective, setSelectedPerspective] = useState<string>('All');
+  const [selectedRole, setSelectedRole] = useState<string>('All');
+  const [selectedDirektorat, setSelectedDirektorat] = useState<string>('All');
+  const [selectedDivisi, setSelectedDivisi] = useState<string>('All');
+  
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Extract Unique Options for Dropdowns
   const perspectives = useMemo(() => {
     const all = Array.from(new Set(kpis.map(k => k.perspective)));
     return ['All', ...all];
   }, [kpis]);
 
+  const roles = useMemo(() => {
+    const all = Array.from(new Set(kpis.map(k => k.jobDescription))).sort();
+    return ['All', ...all];
+  }, [kpis]);
+
+  const direktorats = useMemo(() => {
+    const all = Array.from(new Set(kpis.map(k => k.direktorat).filter(d => d && d !== '-' && d.trim() !== ''))).sort();
+    return ['All', ...all];
+  }, [kpis]);
+
+  const divisis = useMemo(() => {
+    // If a Direktorat is selected, only show divisions for that direktorat
+    let source = kpis;
+    if (selectedDirektorat !== 'All') {
+      source = source.filter(k => k.direktorat === selectedDirektorat);
+    }
+    const all = Array.from(new Set(source.map(k => k.divisi).filter(d => d && d !== '-' && d.trim() !== ''))).sort();
+    return ['All', ...all];
+  }, [kpis, selectedDirektorat]);
+
+  // Apply All Filters
   const filteredKPIs = useMemo(() => {
-    if (selectedPerspective === 'All') return kpis;
-    return kpis.filter(k => k.perspective === selectedPerspective);
-  }, [kpis, selectedPerspective]);
+    return kpis.filter(k => {
+      const matchPerspective = selectedPerspective === 'All' || k.perspective === selectedPerspective;
+      const matchRole = selectedRole === 'All' || k.jobDescription === selectedRole;
+      const matchDirektorat = selectedDirektorat === 'All' || k.direktorat === selectedDirektorat;
+      const matchDivisi = selectedDivisi === 'All' || k.divisi === selectedDivisi;
+      
+      return matchPerspective && matchRole && matchDirektorat && matchDivisi;
+    });
+  }, [kpis, selectedPerspective, selectedRole, selectedDirektorat, selectedDivisi]);
 
   // Selection Logic
   const toggleSelection = (id: string) => {
@@ -123,76 +155,143 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
     );
   }
 
+  // Helper to check if a filter section is relevant (has more than 1 option other than 'All')
+  const showRoleFilter = roles.length > 2;
+  const showDirektoratFilter = direktorats.length > 2;
+  const showDivisiFilter = divisis.length > 2;
+
   return (
     <div className="space-y-6">
       {/* Sticky Filter Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm sticky top-[4.5rem] z-40">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">Library KPI: <span className="text-brand-600">{jobTitle}</span></h2>
-          <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-            <span>{filteredKPIs.length} Ditampilkan</span>
-            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-            <span className={selectedIds.size > 0 ? "text-brand-600 font-medium" : ""}>
-              {selectedIds.size} Dipilih
-            </span>
+      <div className="flex flex-col bg-white p-4 rounded-lg border border-slate-200 shadow-sm sticky top-[4.5rem] z-40 gap-4">
+        
+        {/* Top Row: Title, Count, Actions */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Library KPI: <span className="text-brand-600">{jobTitle}</span></h2>
+            <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+              <span>{filteredKPIs.length} Ditampilkan</span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              <span className={selectedIds.size > 0 ? "text-brand-600 font-medium" : ""}>
+                {selectedIds.size} Dipilih
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            {/* Select All Button */}
+            <button
+              onClick={handleSelectAll}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+            >
+              {isAllSelected ? (
+                <CheckSquare className="w-4 h-4 text-brand-600" />
+              ) : isIndeterminate ? (
+                <div className="w-4 h-4 bg-brand-600 rounded flex items-center justify-center">
+                   <div className="w-2 h-0.5 bg-white"></div>
+                </div>
+              ) : (
+                <Square className="w-4 h-4 text-slate-400" />
+              )}
+              <span className="whitespace-nowrap">{isAllSelected ? 'Deselect All' : 'Select All'}</span>
+            </button>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={handleSaveClick}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-brand-200 text-brand-700 rounded-lg text-sm font-medium hover:bg-brand-50 transition-colors whitespace-nowrap shadow-sm"
+                title="Save to My Library"
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>Save to Library</span>
+              </button>
+              
+              <button 
+                onClick={handleExportCSV}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                  selectedIds.size > 0 
+                    ? 'bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20' 
+                    : 'bg-slate-800 hover:bg-slate-900 text-white'
+                }`}
+              >
+                <Download className="w-4 h-4" />
+                <span>
+                  {selectedIds.size > 0 ? `Export (${selectedIds.size})` : `Export All`}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          {/* Select All Button */}
-          <button
-            onClick={handleSelectAll}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
-          >
-            {isAllSelected ? (
-              <CheckSquare className="w-4 h-4 text-brand-600" />
-            ) : isIndeterminate ? (
-              <div className="w-4 h-4 bg-brand-600 rounded flex items-center justify-center">
-                 <div className="w-2 h-0.5 bg-white"></div>
+
+        {/* Bottom Row: Filters (Responsive Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+            {/* Perspective Filter (Always Visible) */}
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <select 
+                value={selectedPerspective}
+                onChange={(e) => setSelectedPerspective(e.target.value)}
+                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer"
+              >
+                {perspectives.map(p => (
+                  <option key={p} value={p}>{p === 'All' ? 'Semua Perspektif' : p}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Role Filter */}
+            {showRoleFilter && (
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <select 
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer"
+                >
+                  <option value="All">Semua Jabatan (Role)</option>
+                  {roles.filter(r => r !== 'All').map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </div>
-            ) : (
-              <Square className="w-4 h-4 text-slate-400" />
             )}
-            <span className="whitespace-nowrap">{isAllSelected ? 'Deselect All' : 'Select All'}</span>
-          </button>
 
-          <div className="relative flex-1 sm:flex-none">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <select 
-              value={selectedPerspective}
-              onChange={(e) => setSelectedPerspective(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-48 appearance-none cursor-pointer"
-            >
-              {perspectives.map(p => (
-                <option key={p} value={p}>{p === 'All' ? 'Semua Perspektif' : p}</option>
-              ))}
-            </select>
-          </div>
+            {/* Direktorat Filter */}
+            {showDirektoratFilter && (
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <select 
+                  value={selectedDirektorat}
+                  onChange={(e) => {
+                    setSelectedDirektorat(e.target.value);
+                    setSelectedDivisi('All'); // Reset divisi when direktorat changes
+                  }}
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer"
+                >
+                  <option value="All">Semua Direktorat</option>
+                  {direktorats.filter(d => d !== 'All').map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-          <div className="flex gap-2">
-            <button 
-              onClick={handleSaveClick}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-brand-200 text-brand-700 rounded-lg text-sm font-medium hover:bg-brand-50 transition-colors whitespace-nowrap shadow-sm"
-              title="Save to My Library"
-            >
-              <Bookmark className="w-4 h-4" />
-              <span>Save to Library</span>
-            </button>
-            
-            <button 
-              onClick={handleExportCSV}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedIds.size > 0 
-                  ? 'bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20' 
-                  : 'bg-slate-800 hover:bg-slate-900 text-white'
-              }`}
-            >
-              <Download className="w-4 h-4" />
-              <span>
-                {selectedIds.size > 0 ? `Export (${selectedIds.size})` : `Export All`}
-              </span>
-            </button>
-          </div>
+            {/* Divisi Filter */}
+            {showDivisiFilter && (
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <select 
+                  value={selectedDivisi}
+                  onChange={(e) => setSelectedDivisi(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer"
+                >
+                  <option value="All">Semua Divisi</option>
+                  {divisis.filter(d => d !== 'All').map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+            )}
         </div>
       </div>
 
