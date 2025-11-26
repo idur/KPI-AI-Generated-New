@@ -66,7 +66,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
     if (kpisToExport.length === 0) return;
     
     const headers = [
-      "Job Description", "Perspektif BSC", "KPI Name", "Type", "Detail", "Polarity", "Unit", 
+      "Role (Jabatan)", "Perspektif BSC", "KPI Name", "Type", "Detail", "Polarity", "Unit", 
       "Definition", "Data Source", "Formula", "Measurement"
     ];
     

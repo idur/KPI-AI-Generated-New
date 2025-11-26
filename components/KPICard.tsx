@@ -47,7 +47,15 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
           </label>
         </div>
 
-        <div className="p-5 flex-1 pt-10"> {/* Increased top padding for checkbox space */}
+        <div className="p-5 flex-1 pt-6">
+          {/* Role Flag Badge */}
+          <div className="mb-4 pr-8">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-md shadow-sm">
+              <Briefcase className="w-3 h-3 text-brand-300" />
+              <span className="uppercase tracking-wide truncate max-w-[200px]">{kpi.jobDescription}</span>
+            </div>
+          </div>
+
           <div className="flex justify-between items-start mb-3">
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPerspectiveColor(kpi.perspective)}`}>
               {kpi.perspective}
