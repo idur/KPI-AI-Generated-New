@@ -16,6 +16,7 @@ enum AppMode {
 function App() {
   const [mode, setMode] = useState<AppMode>(AppMode.AI_GENERATOR);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>(''); // For batch progress
   
   // KPI Data State
   const [masterKpis, setMasterKpis] = useState<KPI[]>([]); // All data from sheet
@@ -161,70 +162,116 @@ function App() {
     if (!jobInput.trim() && !selectedFile) return;
 
     setLoading(true);
+    setLoadingStatus('Menganalisis permintaan...');
     setError(null);
     setSuccessMessage(null);
     setKpis([]);
     setMasterKpis([]); // Clear master in AI mode
     
     try {
-      let finalJobInput = jobInput;
-      let fileData = undefined;
-      let isCsvTaskMode = false;
-
-      // Special handling for CSV files
+      // Special handling for CSV files (Batch Processing)
       if (selectedFile && selectedFile.name.endsWith('.csv')) {
         const text = await selectedFile.text();
         const lines = text.split('\n').filter(l => l.trim() !== '');
         
-        // Simple CSV Parsing for Format: "Role", "Tugas"
-        let role = "";
-        const tasks: string[] = [];
+        // Parse CSV to get all tasks grouped by Role
+        // Structure: Array of { role: string, task: string }
+        const parsedRows: {role: string, task: string}[] = [];
         
         for (let i = 1; i < lines.length; i++) { // Skip header
            const cols = parseCSVLine(lines[i]);
            if (cols.length >= 2) {
-             if (!role && cols[0]) role = cols[0].replace(/^"|"$/g, '');
-             const task = cols[1]?.replace(/^"|"$/g, '');
-             if (task) tasks.push(task);
+             const r = cols[0]?.replace(/^"|"$/g, '').trim();
+             const t = cols[1]?.replace(/^"|"$/g, '').trim();
+             if (r && t) {
+               parsedRows.push({ role: r, task: t });
+             }
            }
         }
 
-        if (tasks.length === 0) {
+        if (parsedRows.length === 0) {
            throw new Error("Format CSV tidak valid atau kosong. Pastikan ada kolom Role dan Tugas.");
         }
 
-        // Construct a structured prompt input
-        finalJobInput = `Role: ${role || "Posisi Terkait"}\n\nDaftar Tugas & Tanggung Jawab:\n` + 
-                        tasks.map((t, idx) => `${idx + 1}. ${t}`).join('\n');
-        
-        setCurrentJobTitle(role || selectedFile.name.replace('.csv', ''));
-        isCsvTaskMode = true; // Flag to tell Service to use "2 KPI per task" rule
-      } 
-      else if (selectedFile) {
-        // Standard PDF/Image handling
-        const base64 = await fileToBase64(selectedFile);
-        fileData = {
-          base64,
-          mimeType: selectedFile.type || 'application/pdf'
-        };
-        setCurrentJobTitle(jobInput || selectedFile.name);
-      } else {
-        setCurrentJobTitle(jobInput || "Generated Result");
-      }
+        // Determine Job Title from the first row usually
+        const mainRole = parsedRows[0].role;
+        setCurrentJobTitle(mainRole || "Multi-Role Import");
 
-      const result = await generateKPIsFromJobDescription(finalJobInput, fileData, isCsvTaskMode);
-      setKpis(result);
-      setMasterKpis(result); 
-      
-      // Update title if it was derived from CSV content
-      if (isCsvTaskMode && !currentJobTitle) {
-         setCurrentJobTitle(result[0]?.jobDescription || "Generated from CSV");
+        // --- BATCH PROCESSING START ---
+        const BATCH_SIZE = 5; // Safe number to prevent token limits (5 tasks * 2 KPIs = 10 items)
+        let allGeneratedKpis: KPI[] = [];
+        
+        // Group by Role first to maintain context, or just process linear if mixed.
+        // Linear processing is safer for batching.
+        
+        const totalBatches = Math.ceil(parsedRows.length / BATCH_SIZE);
+
+        for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
+          const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
+          const currentBatch = parsedRows.slice(i, i + BATCH_SIZE);
+          
+          setLoadingStatus(`Memproses Tugas ${i + 1} - ${Math.min(i + BATCH_SIZE, parsedRows.length)} dari ${parsedRows.length}...`);
+
+          // Construct Prompt Input for this Batch
+          // We must include the Role in the string so the service can parse it correctly
+          // Format: "Role: <RoleName> | Task: <TaskName>"
+          
+          // If the batch has mixed roles, we handle it. If single role, it's consistent.
+          // We'll create a string that lists tasks.
+          // Since the service prompt expects a list, let's format it.
+          
+          // We will use the Role from the first item in the batch as the "Context Role" for the prompt header,
+          // but list individual items clearly.
+          const batchRoleContext = currentBatch[0].role; 
+          
+          const batchInputString = `Role: ${batchRoleContext}\n\nDaftar Tugas & Tanggung Jawab:\n` + 
+              currentBatch.map((item, idx) => {
+                // If the role changes within the batch, we append it to the task description to ensure AI sees it
+                const rolePrefix = item.role !== batchRoleContext ? `[Role: ${item.role}] ` : '';
+                return `${idx + 1}. ${rolePrefix}${item.task}`;
+              }).join('\n');
+
+          // Call AI Service
+          const batchResults = await generateKPIsFromJobDescription(batchInputString, undefined, true);
+          
+          // Map results to ensure the correct Role is assigned if the AI missed it or if we mixed roles
+          // Ideally, the Service prompt for CSV handles role mapping, but we can enforce it here too if needed.
+          // For now, rely on the service parsing `item.roleName` or defaulting to input.
+          
+          allGeneratedKpis = [...allGeneratedKpis, ...batchResults];
+        }
+
+        setKpis(allGeneratedKpis);
+        setMasterKpis(allGeneratedKpis);
+        setLoadingStatus(''); // Clear status
+
+      } 
+      // Standard PDF/Text Handling (Single Request)
+      else {
+        let finalJobInput = jobInput;
+        let fileData = undefined;
+
+        if (selectedFile) {
+          const base64 = await fileToBase64(selectedFile);
+          fileData = {
+            base64,
+            mimeType: selectedFile.type || 'application/pdf'
+          };
+          setCurrentJobTitle(jobInput || selectedFile.name);
+        } else {
+          setCurrentJobTitle(jobInput || "Generated Result");
+        }
+
+        const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false);
+        setKpis(result);
+        setMasterKpis(result);
       }
 
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat generate KPI.");
     } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
   };
 
@@ -261,6 +308,7 @@ function App() {
   
   const loadPidData = async () => {
     setLoading(true);
+    setLoadingStatus('Mengambil data PID...');
     setError(null);
     setKpis([]);
     setMasterKpis([]);
@@ -284,6 +332,7 @@ function App() {
       }
     } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
   };
 
@@ -432,7 +481,12 @@ function App() {
                   disabled={loading || (!jobInput && !selectedFile)}
                   className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20 hover:shadow-brand-600/30"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Generate KPI Strategy'}
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span className="text-sm font-normal opacity-90">{loadingStatus || 'Processing...'}</span>
+                    </div>
+                  ) : 'Generate KPI Strategy'}
                 </button>
               </div>
             </form>
@@ -683,7 +737,7 @@ function App() {
                 {loading && (
                   <div className="text-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-slate-400 mx-auto mb-2" />
-                    <p className="text-slate-500">Sedang memuat data dari PID Database...</p>
+                    <p className="text-slate-500">{loadingStatus || 'Sedang memuat data...'}</p>
                   </div>
                 )}
 
