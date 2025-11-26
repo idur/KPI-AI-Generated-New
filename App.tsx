@@ -199,10 +199,9 @@ function App() {
 
         // --- BATCH PROCESSING START ---
         const BATCH_SIZE = 5; // Safe number to prevent token limits (5 tasks * 2 KPIs = 10 items)
-        let allGeneratedKpis: KPI[] = [];
         
-        // Group by Role first to maintain context, or just process linear if mixed.
-        // Linear processing is safer for batching.
+        // Removed 'allGeneratedKpis' accumulator variable. 
+        // We will update state directly for incremental rendering.
         
         const totalBatches = Math.ceil(parsedRows.length / BATCH_SIZE);
 
@@ -213,20 +212,10 @@ function App() {
           setLoadingStatus(`Memproses Tugas ${i + 1} - ${Math.min(i + BATCH_SIZE, parsedRows.length)} dari ${parsedRows.length}...`);
 
           // Construct Prompt Input for this Batch
-          // We must include the Role in the string so the service can parse it correctly
-          // Format: "Role: <RoleName> | Task: <TaskName>"
-          
-          // If the batch has mixed roles, we handle it. If single role, it's consistent.
-          // We'll create a string that lists tasks.
-          // Since the service prompt expects a list, let's format it.
-          
-          // We will use the Role from the first item in the batch as the "Context Role" for the prompt header,
-          // but list individual items clearly.
           const batchRoleContext = currentBatch[0].role; 
           
           const batchInputString = `Role: ${batchRoleContext}\n\nDaftar Tugas & Tanggung Jawab:\n` + 
               currentBatch.map((item, idx) => {
-                // If the role changes within the batch, we append it to the task description to ensure AI sees it
                 const rolePrefix = item.role !== batchRoleContext ? `[Role: ${item.role}] ` : '';
                 return `${idx + 1}. ${rolePrefix}${item.task}`;
               }).join('\n');
@@ -234,15 +223,12 @@ function App() {
           // Call AI Service
           const batchResults = await generateKPIsFromJobDescription(batchInputString, undefined, true);
           
-          // Map results to ensure the correct Role is assigned if the AI missed it or if we mixed roles
-          // Ideally, the Service prompt for CSV handles role mapping, but we can enforce it here too if needed.
-          // For now, rely on the service parsing `item.roleName` or defaulting to input.
-          
-          allGeneratedKpis = [...allGeneratedKpis, ...batchResults];
+          // --- INCREMENTAL UPDATE ---
+          // Add results to state immediately so user sees them appearing
+          setKpis(prevKpis => [...prevKpis, ...batchResults]);
+          setMasterKpis(prevMaster => [...prevMaster, ...batchResults]);
         }
 
-        setKpis(allGeneratedKpis);
-        setMasterKpis(allGeneratedKpis);
         setLoadingStatus(''); // Clear status
 
       } 
@@ -768,7 +754,8 @@ function App() {
         )}
 
         {/* --- AI GENERATOR DASHBOARD --- */}
-        {mode === AppMode.AI_GENERATOR && (
+        {/* Render dashboard even if loading is true, to show incremental results */}
+        {mode === AppMode.AI_GENERATOR && (kpis.length > 0 || loading) && (
           <Dashboard 
             kpis={kpis} 
             jobTitle={currentJobTitle || 'Draft'}
