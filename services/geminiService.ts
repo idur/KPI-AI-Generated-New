@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { KPI } from "../types";
 
@@ -6,41 +7,16 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const generateKPIsFromJobDescription = async (
   jobDescription: string,
-  fileData?: { base64: string; mimeType: string }
+  fileData?: { base64: string; mimeType: string },
+  isTaskBasedMode: boolean = false
 ): Promise<KPI[]> => {
   
   // --- API KEY RETRIEVAL ---
-  // We construct the variable name dynamically ("VITE_" + "API_KEY")
-  // This prevents Netlify's secret scanner from failing the build due to "potentially exposed secrets"
-  // when it sees the literal string in the code.
   let apiKey: string | undefined;
   
-  try {
-    const keyPrefix = "VITE_";
-    const keySuffix = "API_KEY";
-    const envVarName = keyPrefix + keySuffix;
-    
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-ignore
-      apiKey = import.meta.env[envVarName];
-    }
-  } catch (e) {
-    // Ignore access errors
-  }
-
-  // Fallback for other environments (using string splitting again)
-  if (!apiKey) {
-    try {
-      const procPrefix = "API_";
-      const procSuffix = "KEY";
-      // @ts-ignore
-      if (typeof process !== 'undefined' && process.env) {
-        // @ts-ignore
-        apiKey = process.env[procPrefix + procSuffix];
-      }
-    } catch (e) {}
-  }
+  // Static access for Vite replacement
+  // @ts-ignore
+  apiKey = import.meta.env.VITE_API_KEY;
 
   if (!apiKey) {
     throw new Error("API Key is missing. Please check your App Settings.");
@@ -48,6 +24,7 @@ export const generateKPIsFromJobDescription = async (
 
   const ai = new GoogleGenAI({ apiKey: apiKey });
 
+  // Default Prompt
   let promptText = `
     Bertindaklah sebagai konsultan HR expert. Buatlah daftar Key Performance Indicators (KPI) yang komprehensif untuk Job Description / Role berikut: "${jobDescription}".
     
@@ -61,6 +38,27 @@ export const generateKPIsFromJobDescription = async (
     Gunakan Bahasa Indonesia yang profesional.
   `;
 
+  // Specialized Prompt for CSV Task List
+  if (isTaskBasedMode) {
+    promptText = `
+      Bertindaklah sebagai konsultan HR expert.
+      Saya akan memberikan daftar "Tugas dan Tanggung Jawab" untuk Role/Jabatan berikut:
+      
+      ${jobDescription}
+      
+      INSTRUKSI KHUSUS (WAJIB DIKUTI):
+      1. Untuk SETIAP item "Tugas" yang tercantum dalam data di atas, Anda WAJIB merumuskan TEPAT 2 (DUA) KPI yang berbeda.
+      2. Jangan meringkas tugas. Jika ada 5 tugas, output harus ada 10 KPI.
+      3. Petakan setiap KPI ke dalam perspektif Balanced Scorecard yang paling relevan (Financial, Customer, Internal Process, Learning & Growth).
+      
+      Untuk setiap KPI, berikan analisis lengkap:
+      - Nama KPI, Definisi, Rumus, Satuan.
+      - Target Audiens & Tantangan Pengukuran.
+      
+      Gunakan Bahasa Indonesia yang profesional.
+    `;
+  }
+
   const parts: any[] = [];
 
   if (fileData) {
@@ -70,17 +68,22 @@ export const generateKPIsFromJobDescription = async (
         mimeType: fileData.mimeType
       }
     });
-    promptText = `
-      Bertindaklah sebagai konsultan HR expert. 
-      Analisis dokumen Job Description yang dilampirkan ini.
-      ${jobDescription ? `Konteks tambahan atau Judul Posisi: "${jobDescription}".` : ''}
-      
-      Berdasarkan dokumen tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
-      
-      Pastikan KPI mencakup 4 perspektif Balanced Scorecard (Financial, Customer, Internal Process, Learning & Growth).
-      Sertakan analisis mengenai Target Audiens (stakeholder) dan Tantangan Pengukuran (potensi hambatan/bias).
-      Gunakan Bahasa Indonesia yang profesional.
-    `;
+    
+    // Update prompt text for File Context if not in task mode (if file is PDF/Image)
+    // If it is CSV task mode, we usually send the parsed text in jobDescription, not as fileData.
+    if (!isTaskBasedMode) {
+       promptText = `
+        Bertindaklah sebagai konsultan HR expert. 
+        Analisis dokumen Job Description yang dilampirkan ini.
+        ${jobDescription ? `Konteks tambahan atau Judul Posisi: "${jobDescription}".` : ''}
+        
+        Berdasarkan dokumen tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
+        
+        Pastikan KPI mencakup 4 perspektif Balanced Scorecard (Financial, Customer, Internal Process, Learning & Growth).
+        Sertakan analisis mengenai Target Audiens (stakeholder) dan Tantangan Pengukuran (potensi hambatan/bias).
+        Gunakan Bahasa Indonesia yang profesional.
+      `;
+    }
   }
 
   parts.push({ text: promptText });
@@ -99,7 +102,7 @@ export const generateKPIsFromJobDescription = async (
               perspective: { type: Type.STRING, description: "Perspektif BSC (Financial, Customer, Internal Process, Learning & Growth)" },
               kpiName: { type: Type.STRING, description: "Nama Indikator Kinerja Utama" },
               type: { type: Type.STRING, description: "Jenis KPI (Outcome, Output, atau Activity)" },
-              detail: { type: Type.STRING, description: "Penjelasan detail singkat tentang KPI ini" },
+              detail: { type: Type.STRING, description: "Penjelasan detail singkat tentang KPI ini (Hubungkan dengan Tugas terkait jika ada)" },
               polarity: { type: Type.STRING, description: "Polaritas (Maximize: semakin tinggi semakin baik, Minimize: semakin rendah semakin baik)" },
               unit: { type: Type.STRING, description: "Satuan pengukuran (%, Rp, Jumlah, Rasio, dll)" },
               definition: { type: Type.STRING, description: "Definisi operasional KPI" },
@@ -123,7 +126,7 @@ export const generateKPIsFromJobDescription = async (
     // Transform into our internal KPI interface with IDs
     return rawData.map((item: any) => ({
       id: generateId(),
-      jobDescription: jobDescription || "Uploaded Document",
+      jobDescription: isTaskBasedMode ? (jobDescription.split('\n')[0].replace('Role: ', '') || "CSV Import") : (jobDescription || "Uploaded Document"),
       perspective: item.perspective,
       kpiName: item.kpiName,
       type: item.type,

@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { generateKPIsFromJobDescription } from './services/geminiService';
 import { getLibrary, saveToLibrary, deleteFromLibrary } from './services/libraryService';
-import { fetchPIDLibrary } from './services/sheetService';
+import { fetchPIDLibrary, parseCSVLine } from './services/sheetService';
 import { KPI, LibraryEntry } from './types';
 import { Dashboard } from './components/Dashboard';
-import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw, Building2, Users, Briefcase, Settings, Info } from 'lucide-react';
+import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, Trash2, ArrowRight, Calendar, Table, Lock, Key, RefreshCw, Building2, Users, Briefcase, Settings, Info, FileSpreadsheet } from 'lucide-react';
 
 enum AppMode {
   AI_GENERATOR = 'AI Generator',
@@ -167,19 +167,60 @@ function App() {
     setMasterKpis([]); // Clear master in AI mode
     
     try {
+      let finalJobInput = jobInput;
       let fileData = undefined;
-      if (selectedFile) {
+      let isCsvTaskMode = false;
+
+      // Special handling for CSV files
+      if (selectedFile && selectedFile.name.endsWith('.csv')) {
+        const text = await selectedFile.text();
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        
+        // Simple CSV Parsing for Format: "Role", "Tugas"
+        let role = "";
+        const tasks: string[] = [];
+        
+        for (let i = 1; i < lines.length; i++) { // Skip header
+           const cols = parseCSVLine(lines[i]);
+           if (cols.length >= 2) {
+             if (!role && cols[0]) role = cols[0].replace(/^"|"$/g, '');
+             const task = cols[1]?.replace(/^"|"$/g, '');
+             if (task) tasks.push(task);
+           }
+        }
+
+        if (tasks.length === 0) {
+           throw new Error("Format CSV tidak valid atau kosong. Pastikan ada kolom Role dan Tugas.");
+        }
+
+        // Construct a structured prompt input
+        finalJobInput = `Role: ${role || "Posisi Terkait"}\n\nDaftar Tugas & Tanggung Jawab:\n` + 
+                        tasks.map((t, idx) => `${idx + 1}. ${t}`).join('\n');
+        
+        setCurrentJobTitle(role || selectedFile.name.replace('.csv', ''));
+        isCsvTaskMode = true; // Flag to tell Service to use "2 KPI per task" rule
+      } 
+      else if (selectedFile) {
+        // Standard PDF/Image handling
         const base64 = await fileToBase64(selectedFile);
         fileData = {
           base64,
           mimeType: selectedFile.type || 'application/pdf'
         };
+        setCurrentJobTitle(jobInput || selectedFile.name);
+      } else {
+        setCurrentJobTitle(jobInput || "Generated Result");
       }
 
-      const result = await generateKPIsFromJobDescription(jobInput, fileData);
+      const result = await generateKPIsFromJobDescription(finalJobInput, fileData, isCsvTaskMode);
       setKpis(result);
-      setMasterKpis(result); // In AI mode, master is just the result
-      setCurrentJobTitle(jobInput || selectedFile?.name || "Generated Result");
+      setMasterKpis(result); 
+      
+      // Update title if it was derived from CSV content
+      if (isCsvTaskMode && !currentJobTitle) {
+         setCurrentJobTitle(result[0]?.jobDescription || "Generated from CSV");
+      }
+
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat generate KPI.");
     } finally {
@@ -326,7 +367,7 @@ function App() {
           <div className="max-w-4xl mx-auto px-4 py-12 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Generate KPI Library Instan</h2>
             <p className="text-slate-600 mb-8 max-w-2xl mx-auto text-sm sm:text-base">
-              Masukkan Job Description, Role, atau upload dokumen JD Anda, dan AI akan merancang struktur KPI lengkap berdasarkan Balanced Scorecard.
+              Masukkan Job Description, Role, atau upload dokumen JD (PDF/TXT/CSV), dan AI akan merancang struktur KPI lengkap.
             </p>
             <form onSubmit={handleGenerate} className="relative max-w-lg mx-auto">
               <div className="relative z-0">
@@ -345,7 +386,7 @@ function App() {
                     {selectedFile ? (
                       <>
                         <div className="bg-white p-1.5 rounded shadow-sm text-brand-600 flex-shrink-0">
-                            <FileText className="w-5 h-5" />
+                             {selectedFile.name.endsWith('.csv') ? <FileSpreadsheet className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                         </div>
                         <div className="text-left overflow-hidden">
                           <p className="text-sm font-medium text-slate-900 truncate max-w-[150px] sm:max-w-[200px]">{selectedFile.name}</p>
@@ -354,7 +395,7 @@ function App() {
                       </>
                     ) : (
                       <p className="text-sm text-slate-500 italic text-left truncate">
-                        Opsional: Upload file JD (PDF/TXT)
+                        Upload JD: PDF, TXT, atau CSV (Format: Role, Tugas)
                       </p>
                     )}
                   </div>
@@ -376,7 +417,7 @@ function App() {
                         <input 
                           ref={fileInputRef}
                           type="file" 
-                          accept=".pdf,.txt,application/pdf,text/plain" 
+                          accept=".pdf,.txt,.csv,application/pdf,text/plain,text/csv,application/vnd.ms-excel" 
                           className="hidden" 
                           onChange={handleFileChange}
                         />

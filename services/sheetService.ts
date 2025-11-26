@@ -7,7 +7,7 @@ import { KPI } from "../types";
 const ENV_SHEET_URL = import.meta.env.VITE_PID_SHEET_URL || "";
 
 // Helper to parse CSV line respecting quotes
-const parseCSVLine = (str: string): string[] => {
+export const parseCSVLine = (str: string): string[] => {
   const result: string[] = [];
   let s = '';
   let openQuote = false;
