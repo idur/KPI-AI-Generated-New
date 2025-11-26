@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { KPI } from '../types';
-import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle, Building2, Briefcase } from 'lucide-react';
+import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle, Building2, Briefcase, ClipboardList } from 'lucide-react';
 
 interface KPICardProps {
   kpi: KPI;
@@ -107,6 +107,12 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
               <div className="pr-8 w-full">
+                {/* Role Badge in Header */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-md shadow-sm mb-3">
+                    <Briefcase className="w-3 h-3 text-brand-300" />
+                    <span className="uppercase tracking-wide">{kpi.jobDescription}</span>
+                </div>
+
                 <div className="flex items-center gap-3 mb-2">
                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPerspectiveColor(kpi.perspective)}`}>
                     {kpi.perspective}
@@ -134,11 +140,6 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                         </span>
                       </>
                    )}
-                   <span className="text-slate-300 hidden sm:inline">|</span>
-                   <span className="flex items-center gap-1.5">
-                      <Briefcase className="w-4 h-4 text-slate-400" />
-                      <span className="font-medium text-slate-700">{kpi.jobDescription}</span>
-                   </span>
                 </div>
 
               </div>
@@ -178,6 +179,20 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
               </div>
 
               <div className="space-y-6">
+                
+                {/* Task Context Section */}
+                {kpi.task && kpi.task !== '-' && (
+                  <div className="bg-brand-50/50 p-4 rounded-xl border border-brand-100">
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-brand-800 uppercase tracking-wide mb-2">
+                      <ClipboardList className="w-4 h-4 text-brand-600" />
+                      Tugas & Tanggung Jawab
+                    </h4>
+                    <p className="text-brand-900 font-medium leading-relaxed italic">
+                      "{kpi.task}"
+                    </p>
+                  </div>
+                )}
+
                 {/* Description */}
                 <div>
                   <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
@@ -222,7 +237,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   </div>
                 </div>
 
-                {/* Extended Analysis (Target Audience & Challenges) - Usually from AI, but PID might not have these */}
+                {/* Extended Analysis (Target Audience & Challenges) */}
                 {(kpi.targetAudience || kpi.measurementChallenges) && (
                   <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 mt-4">
                     {kpi.targetAudience && (

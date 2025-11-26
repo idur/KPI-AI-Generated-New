@@ -66,16 +66,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
     if (kpisToExport.length === 0) return;
     
     const headers = [
-      "Role (Jabatan)", "Perspektif BSC", "KPI Name", "Type", "Detail", "Polarity", "Unit", 
-      "Definition", "Data Source", "Formula", "Measurement"
+      "Role (Jabatan)", "Direktorat", "Divisi", "Perspektif BSC", "KPI Name", "Type", 
+      "Tugas & Tanggung Jawab", "Detail", "Polarity", "Unit", 
+      "Definition", "Data Source", "Formula", "Measurement", 
+      "Target Audience", "Measurement Challenges"
     ];
     
     const csvContent = [
       headers.join(','),
       ...kpisToExport.map(k => [
-        `"${k.jobDescription}"`, `"${k.perspective}"`, `"${k.kpiName}"`, `"${k.type}"`, 
-        `"${k.detail}"`, `"${k.polarity}"`, `"${k.unit}"`, `"${k.definition}"`, 
-        `"${k.dataSource}"`, `"${k.formula}"`, `"${k.measurement}"`
+        `"${k.jobDescription}"`, 
+        `"${k.direktorat || '-'}"`, 
+        `"${k.divisi || '-'}"`, 
+        `"${k.perspective}"`, 
+        `"${k.kpiName}"`, 
+        `"${k.type}"`, 
+        `"${k.task || '-'}"`, 
+        `"${k.detail}"`, 
+        `"${k.polarity}"`, 
+        `"${k.unit}"`, 
+        `"${k.definition}"`, 
+        `"${k.dataSource}"`, 
+        `"${k.formula}"`, 
+        `"${k.measurement}"`,
+        `"${k.targetAudience || '-'}"`,
+        `"${k.measurementChallenges || '-'}"`
       ].join(','))
     ].join('\n');
 
@@ -110,7 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
 
   return (
     <div className="space-y-6">
-      {/* Updated z-index to 40 to ensure it sits above KPI Card contents like the checkbox (z-10) */}
+      {/* Sticky Filter Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm sticky top-[4.5rem] z-40">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Library KPI: <span className="text-brand-600">{jobTitle}</span></h2>

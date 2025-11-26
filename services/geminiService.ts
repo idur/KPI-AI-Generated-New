@@ -14,12 +14,19 @@ export const generateKPIsFromJobDescription = async (
   // --- API KEY RETRIEVAL ---
   let apiKey: string | undefined;
   
-  // Static access for Vite replacement
-  // @ts-ignore
-  apiKey = import.meta.env.VITE_API_KEY;
+  // Safe access for Vite replacement
+  try {
+    // @ts-ignore
+    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+      // @ts-ignore
+      apiKey = import.meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    console.warn("Failed to access env vars for API Key");
+  }
 
   if (!apiKey) {
-    throw new Error("API Key is missing. Please check your App Settings.");
+    throw new Error("API Key is missing. Please check your App Settings or Environment Variables.");
   }
 
   const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -48,12 +55,13 @@ export const generateKPIsFromJobDescription = async (
       
       INSTRUKSI KHUSUS (WAJIB DIKUTI):
       1. Untuk SETIAP item "Tugas" yang tercantum dalam data di atas, Anda WAJIB merumuskan TEPAT 2 (DUA) KPI yang berbeda.
-      2. Jangan meringkas tugas. Jika ada 5 tugas, output harus ada 10 KPI.
-      3. Petakan setiap KPI ke dalam perspektif Balanced Scorecard yang paling relevan (Financial, Customer, Internal Process, Learning & Growth).
+      2. Jangan meringkas tugas. Jika ada 10 tugas, output harus ada 20 KPI.
+      3. Petakan setiap KPI ke dalam perspektif Balanced Scorecard yang paling relevan.
+      4. PENTING: Sertakan teks asli "Tugas" yang menjadi dasar KPI tersebut di field 'task' pada output JSON.
+      5. Identifikasi nama Role/Jabatan yang spesifik dari input dan masukkan ke field 'roleName'.
       
-      Untuk setiap KPI, berikan analisis lengkap:
-      - Nama KPI, Definisi, Rumus, Satuan.
-      - Target Audiens & Tantangan Pengukuran.
+      Untuk setiap KPI, berikan analisis lengkap (Definisi, Rumus, Target Audiens, dll).
+      Buat deskripsi yang PADAT dan RINGKAS (Concise) untuk menghemat token output.
       
       Gunakan Bahasa Indonesia yang profesional.
     `;
@@ -69,8 +77,6 @@ export const generateKPIsFromJobDescription = async (
       }
     });
     
-    // Update prompt text for File Context if not in task mode (if file is PDF/Image)
-    // If it is CSV task mode, we usually send the parsed text in jobDescription, not as fileData.
     if (!isTaskBasedMode) {
        promptText = `
         Bertindaklah sebagai konsultan HR expert. 
@@ -79,8 +85,8 @@ export const generateKPIsFromJobDescription = async (
         
         Berdasarkan dokumen tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
         
-        Pastikan KPI mencakup 4 perspektif Balanced Scorecard (Financial, Customer, Internal Process, Learning & Growth).
-        Sertakan analisis mengenai Target Audiens (stakeholder) dan Tantangan Pengukuran (potensi hambatan/bias).
+        Pastikan KPI mencakup 4 perspektif Balanced Scorecard.
+        Sertakan analisis mengenai Target Audiens dan Tantangan Pengukuran.
         Gunakan Bahasa Indonesia yang profesional.
       `;
     }
@@ -99,20 +105,22 @@ export const generateKPIsFromJobDescription = async (
           items: {
             type: Type.OBJECT,
             properties: {
+              roleName: { type: Type.STRING, description: "Nama Role/Jabatan spesifik pemilik KPI ini" },
               perspective: { type: Type.STRING, description: "Perspektif BSC (Financial, Customer, Internal Process, Learning & Growth)" },
               kpiName: { type: Type.STRING, description: "Nama Indikator Kinerja Utama" },
               type: { type: Type.STRING, description: "Jenis KPI (Outcome, Output, atau Activity)" },
-              detail: { type: Type.STRING, description: "Penjelasan detail singkat tentang KPI ini (Hubungkan dengan Tugas terkait jika ada)" },
-              polarity: { type: Type.STRING, description: "Polaritas (Maximize: semakin tinggi semakin baik, Minimize: semakin rendah semakin baik)" },
-              unit: { type: Type.STRING, description: "Satuan pengukuran (%, Rp, Jumlah, Rasio, dll)" },
+              detail: { type: Type.STRING, description: "Penjelasan detail singkat tentang KPI ini" },
+              task: { type: Type.STRING, description: "Teks asli tugas dan tanggung jawab yang mendasari KPI ini (Copy dari input)" },
+              polarity: { type: Type.STRING, description: "Polaritas (Maximize/Minimize)" },
+              unit: { type: Type.STRING, description: "Satuan pengukuran" },
               definition: { type: Type.STRING, description: "Definisi operasional KPI" },
-              dataSource: { type: Type.STRING, description: "Alternatif sumber data untuk pelacakan" },
-              formula: { type: Type.STRING, description: "Contoh rumus perhitungan" },
-              measurement: { type: Type.STRING, description: "Frekuensi atau metode pengukuran (Bulanan, Tahunan, dll)" },
-              targetAudience: { type: Type.STRING, description: "Stakeholder atau pihak yang paling berkepentingan dengan data KPI ini" },
-              measurementChallenges: { type: Type.STRING, description: "Analisis potensi kesulitan, bias, atau hambatan dalam mengukur KPI ini" }
+              dataSource: { type: Type.STRING, description: "Sumber data" },
+              formula: { type: Type.STRING, description: "Rumus perhitungan" },
+              measurement: { type: Type.STRING, description: "Frekuensi pengukuran" },
+              targetAudience: { type: Type.STRING, description: "Stakeholder utama" },
+              measurementChallenges: { type: Type.STRING, description: "Potensi hambatan pengukuran" }
             },
-            required: ["perspective", "kpiName", "type", "detail", "polarity", "unit", "definition", "dataSource", "formula", "measurement", "targetAudience", "measurementChallenges"]
+            required: ["perspective", "kpiName", "type", "detail", "polarity", "unit", "definition", "dataSource", "formula", "measurement"]
           }
         }
       }
@@ -121,28 +129,51 @@ export const generateKPIsFromJobDescription = async (
     const text = response.text;
     if (!text) return [];
 
-    const rawData = JSON.parse(text);
+    // Sanitize output in case of markdown block
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    const rawData = JSON.parse(cleanText);
     
-    // Transform into our internal KPI interface with IDs
-    return rawData.map((item: any) => ({
-      id: generateId(),
-      jobDescription: isTaskBasedMode ? (jobDescription.split('\n')[0].replace('Role: ', '') || "CSV Import") : (jobDescription || "Uploaded Document"),
-      perspective: item.perspective,
-      kpiName: item.kpiName,
-      type: item.type,
-      detail: item.detail,
-      polarity: item.polarity,
-      unit: item.unit,
-      definition: item.definition,
-      dataSource: item.dataSource,
-      formula: item.formula,
-      measurement: item.measurement,
-      targetAudience: item.targetAudience,
-      measurementChallenges: item.measurementChallenges
-    }));
+    // Transform into internal KPI interface
+    return rawData.map((item: any) => {
+      // Determine Job Description Label
+      let jobDescLabel = "Uploaded Document";
+      
+      if (isTaskBasedMode) {
+        // Priority 1: AI Extracted Role Name
+        if (item.roleName && item.roleName !== "Unknown") {
+          jobDescLabel = item.roleName;
+        } 
+        // Priority 2: Fallback to context
+        else {
+          jobDescLabel = jobDescription.split('\n')[0].replace('Role: ', '').trim() || "CSV Import";
+        }
+      } else {
+        jobDescLabel = jobDescription || "Uploaded Document";
+      }
+
+      return {
+        id: generateId(),
+        jobDescription: jobDescLabel,
+        perspective: item.perspective,
+        kpiName: item.kpiName,
+        type: item.type,
+        detail: item.detail,
+        task: item.task || '-', // Map the Task field
+        polarity: item.polarity,
+        unit: item.unit,
+        definition: item.definition,
+        dataSource: item.dataSource,
+        formula: item.formula,
+        measurement: item.measurement,
+        targetAudience: item.targetAudience,
+        measurementChallenges: item.measurementChallenges
+      };
+    });
 
   } catch (error) {
     console.error("Gemini API Error:", error);
+    // Silent fail empty array or rethrow depending on need
     throw error;
   }
 };

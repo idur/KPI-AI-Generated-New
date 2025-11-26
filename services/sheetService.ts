@@ -2,9 +2,18 @@
 import { KPI } from "../types";
 
 // --- KONFIGURASI "BACKEND" ---
-// Akses variabel secara langsung agar Vite dapat melakukan static replacement dengan benar
-// @ts-ignore
-const ENV_SHEET_URL = import.meta.env.VITE_PID_SHEET_URL || "";
+// Helper to safely get env vars without crashing in dev/preview
+const getEnvSheetUrl = () => {
+  try {
+    // @ts-ignore
+    return (import.meta && import.meta.env && import.meta.env.VITE_PID_SHEET_URL) ? import.meta.env.VITE_PID_SHEET_URL : "";
+  } catch (e) {
+    console.warn("Env var access error", e);
+    return "";
+  }
+};
+
+const ENV_SHEET_URL = getEnvSheetUrl();
 
 // Helper to parse CSV line respecting quotes
 export const parseCSVLine = (str: string): string[] => {

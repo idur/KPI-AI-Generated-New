@@ -23,6 +23,7 @@ export interface KPI {
   dataSource: string;
   formula: string;
   measurement: string;
+  task?: string; // Original Task context
   targetAudience?: string;
   measurementChallenges?: string;
   // New fields for PID Library
