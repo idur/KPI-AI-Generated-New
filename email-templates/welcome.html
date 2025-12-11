@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang di Library KPI</title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            /* slate-50 */
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            /* slate-200 */
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            padding: 32px 32px 0 32px;
+            text-align: center;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            /* slate-900 */
+            letter-spacing: -0.025em;
+        }
+
+        .logo-accent {
+            color: #0284c7;
+            /* brand-600 */
+        }
+
+        .content {
+            padding: 32px;
+            color: #475569;
+            /* slate-600 */
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #0f172a;
+            /* slate-900 */
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        p {
+            margin: 0 0 24px 0;
+            font-size: 16px;
+        }
+
+        .button-wrapper {
+            text-align: center;
+            margin: 32px 0;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #0284c7;
+            /* brand-600 */
+            color: #ffffff;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #0369a1;
+            /* brand-700 */
+        }
+
+        .info-box {
+            background-color: #f0f9ff;
+            /* brand-50 */
+            border: 1px solid #bce3fb;
+            /* brand-200 aprox */
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer {
+            padding: 32px;
+            text-align: center;
+            color: #94a3b8;
+            /* slate-400 */
+            font-size: 14px;
+        }
+
+        .links {
+            margin-bottom: 16px;
+        }
+
+        .link {
+            color: #64748b;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+
+        .link:hover {
+            color: #0284c7;
+        }
+
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 20px 10px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Main Card -->
+        <div class="card">
+            <!-- Header with Logo -->
+            <div class="header">
+                <div class="logo-text">
+                    Library <span class="logo-accent">KPI</span>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <h1>Selamat Bergabung! 👋</h1>
+                <p>Halo <strong>Rudy</strong>,</p>
+                <p>Terima kasih telah mendaftar di Library KPI. Akun Anda berhasil dibuat dan sekarang Anda siap untuk
+                    mulai membuat KPI profesional dengan bantuan AI.</p>
+
+                <!-- Feature Highlights (Visual Interest) -->
+                <div class="info-box">
+                    <p style="margin-bottom: 12px; font-weight: 600; color: #0c4a6e;">Apa yang bisa Anda lakukan?</p>
+                    <p style="font-size: 14px; margin-bottom: 8px;">✨ <strong>Generate Instan:</strong> Buat KPI lengkap
+                        dari Job Description hanya dalam hitungan detik.</p>
+                    <p style="font-size: 14px; margin-bottom: 8px;">📚 <strong>My Library:</strong> Simpan dan kelola
+                        koleksi KPI Anda sendiri.</p>
+                    <p style="font-size: 14px; margin-bottom: 0;">📤 <strong>Ekspor Mudah:</strong> Download hasil ke
+                        Excel atau PDF.</p>
+                </div>
+
+                <p>Untuk memulai, silakan login ke dashboard Anda melalui tombol di bawah ini:</p>
+
+                <div class="button-wrapper">
+                    <a href="https://library-kpi.app/login" class="button">Masuk ke Dashboard</a>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b; text-align: center;">
+                    Jika tombol di atas tidak berfungsi, salin dan tempel link berikut di browser Anda:<br>
+                    <span style="color: #0284c7;">https://library-kpi.app/login</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="links">
+                <a href="#" class="link">Privacy Policy</a>
+                <a href="#" class="link">Terms of Service</a>
+                <a href="#" class="link">Bantuan</a>
+            </div>
+            <p>&copy; 2025 Library KPI. All rights reserved.</p>
+            <p>Jakarta, Indonesia</p>
+        </div>
+    </div>
+</body>
+
+</html>

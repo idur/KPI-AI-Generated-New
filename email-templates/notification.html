@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifikasi System</title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 24px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .logo-accent {
+            color: #0284c7;
+        }
+
+        .date {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .content {
+            padding: 32px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        h2 {
+            color: #0f172a;
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        p {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background-color: #ecfdf5;
+            /* emerald-50 */
+            color: #059669;
+            /* emerald-600 */
+            margin-bottom: 16px;
+        }
+
+        .details-box {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            color: #64748b;
+        }
+
+        .detail-value {
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: #ffffff;
+            color: #0284c7;
+            border: 1px solid #0284c7;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-top: 24px;
+            transition: all 0.2s;
+        }
+
+        .button:hover {
+            background-color: #f0f9ff;
+        }
+
+        .footer {
+            padding: 24px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo-text">
+                    Library <span class="logo-accent">KPI</span>
+                </div>
+                <div class="date">{{date}}</div>
+            </div>
+
+            <div class="content">
+                <span class="status-badge">Selesai</span>
+                <h2>Batch Processing Anda Telah Selesai</h2>
+                <p>Halo Rudy, proses generate KPI massal yang Anda minta telah berhasil diselesaikan oleh sistem kami.
+                </p>
+
+                <div class="details-box">
+                    <div class="detail-row">
+                        <span class="detail-label">File Sumber</span>
+                        <span class="detail-value">departments_kpi_2024.csv</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total Role</span>
+                        <span class="detail-value">12 Posisi</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Token Terpakai</span>
+                        <span class="detail-value">450 Token</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Statys</span>
+                        <span class="detail-value" style="color: #059669;">Sukses (100%)</span>
+                    </div>
+                </div>
+
+                <p>Anda dapat melihat hasil lengkapnya dan melakukan ekspor ke PDF/Excel melalui dashboard aplikasi.</p>
+
+                <a href="#" class="button">Lihat Hasil di Dashboard</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Email ini dikirim secara otomatis oleh sistem Library KPI.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Email Anda</title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 32px 32px 0 32px;
+            text-align: center;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .logo-accent {
+            color: #0284c7;
+        }
+
+        .content {
+            padding: 32px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        p {
+            margin: 0 0 24px 0;
+            font-size: 16px;
+        }
+
+        .button-wrapper {
+            text-align: center;
+            margin: 32px 0;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #0284c7;
+            color: #ffffff;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #0369a1;
+        }
+
+        .warning-text {
+            font-size: 14px;
+            color: #64748b;
+            text-align: center;
+            margin-top: 24px;
+            font-style: italic;
+        }
+
+        .footer {
+            padding: 32px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo-text">
+                    Library <span class="logo-accent">KPI</span>
+                </div>
+            </div>
+
+            <div class="content">
+                <h1>Verifikasi Email Anda 🛡️</h1>
+                <p>Halo,</p>
+                <p>Kami menerima permintaan pendaftaran akun Library KPI menggunakan alamat email ini. Untuk
+                    melanjutkan, silakan verifikasi email Anda dengan mengklik tombol di bawah:</p>
+
+                <div class="button-wrapper">
+                    <a href="{{verification_link}}" class="button">Verifikasi Email Saya</a>
+                </div>
+
+                <p style="text-align: center; margin-bottom: 0;">Atau gunakan kode verifikasi berikut:</p>
+                <div
+                    style="background: #f1f5f9; border-radius: 8px; font-family: monospace; font-size: 24px; letter-spacing: 4px; text-align: center; padding: 16px; margin: 12px 0; color: #0f172a; font-weight: 700;">
+                    123456
+                </div>
+
+                <p class="warning-text">
+                    Jika Anda tidak merasa mendaftar di Library KPI, Anda dapat mengabaikan email ini dengan aman.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Library KPI. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

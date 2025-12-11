@@ -43,3 +43,10 @@ export interface LibraryEntry {
   updatedAt: number;
   kpis: KPI[];
 }
+
+export interface UserProfile {
+  full_name?: string;
+  company?: string;
+  avatar_url?: string;
+  bio?: string;
+}
