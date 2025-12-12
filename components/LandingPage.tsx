@@ -345,7 +345,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <footer className="bg-slate-900 text-slate-400 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <p className="text-sm">
-                        © 2025 KPI Library Generator. Powered by <a href='betterandco.com' target='' >Better&Co.</a>.
+                        © 2025 KPI Library Generator. Powered by <a href='http://betterandco.com' target='_blank' rel='noopener noreferrer' >Better&Co.</a>.
                     </p>
                 </div>
             </footer>
