@@ -19,9 +19,9 @@ export const generateKPIsFromJobDescription = async (
   // Safe access for Vite replacement
   try {
     // @ts-ignore
-    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+    if (import.meta && import.meta.env) {
       // @ts-ignore
-      apiKey = import.meta.env.VITE_API_KEY;
+      apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
     }
   } catch (e) {
     console.warn("Failed to access env vars for API Key");
