@@ -13,6 +13,10 @@ create table if not exists public.user_tokens (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Ensure columns exist if table was already created
+alter table public.user_tokens add column if not exists role text default 'user';
+alter table public.user_tokens add column if not exists email text;
+
 -- Enable RLS
 alter table public.user_tokens enable row level security;
 
