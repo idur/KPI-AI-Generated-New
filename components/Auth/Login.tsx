@@ -153,7 +153,7 @@ export const Login: React.FC = () => {
                     </button>
                 </form>
 
-                <div className="mt-6 text-center">
+                {/* <div className="mt-6 text-center">
                     <button
                         onClick={() => {
                             setIsSignUp(!isSignUp);
@@ -163,7 +163,7 @@ export const Login: React.FC = () => {
                     >
                         {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
                     </button>
-                </div>
+                </div> */}
             </div>
         </div>
     );
