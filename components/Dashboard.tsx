@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { KPI } from '../types';
 import { KPICard } from './KPICard';
-import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark, Briefcase, Building2, Users, FileSpreadsheet, FileText } from 'lucide-react';
+import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark, Briefcase, Building2, Users, FileSpreadsheet, FileText, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -11,9 +11,10 @@ interface DashboardProps {
   jobTitle: string;
   onSaveToLibrary: (kpisToSave: KPI[]) => void;
   onUpdateKPI?: (kpi: KPI) => void;
+  onJobTitleChange?: (newTitle: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLibrary, onUpdateKPI }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLibrary, onUpdateKPI, onJobTitleChange }) => {
   // Filter States
   const [selectedPerspective, setSelectedPerspective] = useState<string>('All');
   const [selectedRole, setSelectedRole] = useState<string>('All');
@@ -22,6 +23,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Title Editing State
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(jobTitle);
+
+  // Update editedTitle when jobTitle prop changes
+  React.useEffect(() => {
+    setEditedTitle(jobTitle);
+  }, [jobTitle]);
+
+  const handleTitleSave = () => {
+    if (editedTitle.trim() && onJobTitleChange) {
+      onJobTitleChange(editedTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleCancel = () => {
+    setEditedTitle(jobTitle);
+    setIsEditingTitle(false);
+  };
 
   // Extract Unique Options for Dropdowns
   const perspectives = useMemo(() => {
@@ -235,7 +257,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
         {/* Top Row: Title, Count, Actions */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Library KPI: <span className="text-brand-600">{jobTitle}</span></h2>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleTitleSave();
+                    if (e.key === 'Escape') handleTitleCancel();
+                  }}
+                  className="text-xl font-bold text-slate-800 border-2 border-brand-500 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                  autoFocus
+                />
+                <button
+                  onClick={handleTitleSave}
+                  className="p-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+                  title="Save"
+                >
+                  <CheckSquare className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleTitleCancel}
+                  className="p-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                  title="Cancel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <h2
+                className="text-xl font-bold text-slate-800 cursor-pointer hover:text-brand-600 transition-colors group flex items-center gap-2"
+                onClick={() => setIsEditingTitle(true)}
+                title="Click to edit"
+              >
+                <span>Library KPI: <span className="text-brand-600">{jobTitle}</span></span>
+                <span className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">(click to edit)</span>
+              </h2>
+            )}
             <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
               <span>{filteredKPIs.length} Ditampilkan</span>
               <span className="w-1 h-1 bg-slate-300 rounded-full"></span>

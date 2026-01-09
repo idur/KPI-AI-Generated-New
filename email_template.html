@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Library KPI</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            padding: 32px;
+            text-align: center;
+        }
+
+        .logo {
+            color: white;
+            font-size: 24px;
+            font-weight: 800;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: #a5b4fc;
+        }
+
+        .content {
+            padding: 40px 32px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .h1 {
+            color: #1e293b;
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: white !important;
+            padding: 12px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 24px;
+            text-align: center;
+            width: auto;
+        }
+
+        .button:hover {
+            background-color: #4338ca;
+        }
+
+        .footer {
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .link {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Library <span>KPI</span></div>
+        </div>
+        <div class="content">
+            <h1 class="h1">Konfirmasi Registrasi Anda</h1>
+            <p>Halo,</p>
+            <p>Terima kasih telah mendaftar di <strong>Library KPI</strong>. Untuk mulai menggunakan AI Generator dan
+                mengakses library lengkap, silakan konfirmasi email Anda dengan mengklik tombol di bawah ini:</p>
+
+            <div style="text-align: center;">
+                <a href="{{ .ConfirmationURL }}" class="button">Konfirmasi Email</a>
+            </div>
+
+            <p style="margin-top: 32px; font-size: 14px; color: #64748b;">
+                Jika tombol di atas tidak berfungsi, salin dan tempel tautan berikut di browser Anda:<br>
+                <span style="color: #4f46e5;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Library KPI via Better&Co. All rights reserved.</p>
+            <p>Need help? <a href="https://wa.me/6285111031581" class="link">Contact Admin</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

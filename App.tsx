@@ -16,6 +16,8 @@ import { BulkUploadModal } from './components/BulkUploadModal';
 import { ProfileModal } from './components/Profile/ProfileModal';
 import { ProfileDropdown } from './components/Profile/ProfileDropdown';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
+import { LandingPage } from './components/LandingPage';
 import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, RefreshCw, Info, FileSpreadsheet, LogOut, History, ArrowRight, User, Shield } from 'lucide-react';
 
 enum AppMode {
@@ -25,14 +27,53 @@ enum AppMode {
   ADMIN_DASHBOARD = 'Admin Dashboard'
 }
 
+// Helper to get current route from hash
+const getRouteFromHash = (): AppMode => {
+  const hash = window.location.hash.slice(1); // Remove #
+  switch (hash) {
+    case '/library':
+      return AppMode.MY_LIBRARY;
+    case '/history':
+      return AppMode.TOKEN_HISTORY;
+    case '/admin':
+      return AppMode.ADMIN_DASHBOARD;
+    default:
+      return AppMode.AI_GENERATOR;
+  }
+};
+
+// Helper to set hash from mode
+const setHashFromMode = (mode: AppMode) => {
+  switch (mode) {
+    case AppMode.MY_LIBRARY:
+      window.location.hash = '#/library';
+      break;
+    case AppMode.TOKEN_HISTORY:
+      window.location.hash = '#/history';
+      break;
+    case AppMode.ADMIN_DASHBOARD:
+      window.location.hash = '#/admin';
+      break;
+    default:
+      window.location.hash = '#/';
+      break;
+  }
+};
+
 function AppContent() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const [mode, setMode] = useState<AppMode>(AppMode.AI_GENERATOR);
+  const [mode, setMode] = useState<AppMode>(getRouteFromHash());
+
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState<string>(''); // For batch progress
   const [showBuyTokenModal, setShowBuyTokenModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; itemId: string | null; itemName: string }>({
+    isOpen: false,
+    itemId: null,
+    itemName: ''
+  });
 
   // KPI Data State
   const [masterKpis, setMasterKpis] = useState<KPI[]>([]); // All data from sheet
@@ -51,6 +92,22 @@ function AppContent() {
 
   // Library State
   const [libraryItems, setLibraryItems] = useState<LibraryEntry[]>([]);
+
+  // Listen to hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      setMode(getRouteFromHash());
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update hash when mode changes programmatically
+  const changeMode = (newMode: AppMode) => {
+    setMode(newMode);
+    setHashFromMode(newMode);
+  };
 
 
 
@@ -72,11 +129,10 @@ function AppContent() {
       }
     };
     checkRole();
-  }, [user]);
+  }, [user, refreshTokens]);
 
 
-
-  // Load library when mode changes to My Library
+  // Load library when navigating to library page
   useEffect(() => {
     const loadLibrary = async () => {
       if (mode === AppMode.MY_LIBRARY) {
@@ -85,8 +141,6 @@ function AppContent() {
       }
     };
     loadLibrary();
-    // Removed auto-clearing of KPIs when switching to AI_GENERATOR.
-    // This allows data loaded from My Library to persist when the view switches.
   }, [mode]);
 
 
@@ -249,7 +303,13 @@ function AppContent() {
           setCurrentJobTitle(jobInput || "Generated Result");
         }
 
-        const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false, 20, language);
+        const onProgress = (partialKpis: KPI[]) => {
+          setKpis(partialKpis);
+          setMasterKpis(partialKpis);
+          setLoadingStatus(`Menghasilkan KPI (${partialKpis.length} item)...`);
+        };
+
+        const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false, 20, language, onProgress);
 
         // Deduct Tokens (1 Token per request, regardless of KPI count)
         const cost = 1;
@@ -297,16 +357,32 @@ function AppContent() {
     setCurrentJobTitle(item.jobTitle);
     setJobInput(item.jobTitle); // Update input field context
     setCurrentLibraryId(item.id); // Set current library ID
-    setMode(AppMode.AI_GENERATOR); // Switch to main view to see the dashboard
+    changeMode(AppMode.AI_GENERATOR); // Navigate to generator view
     window.scrollTo(0, 0);
   };
 
   const handleDeleteLibraryItem = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm("Apakah Anda yakin ingin menghapus koleksi KPI ini?")) {
-      await deleteFromLibrary(id);
+    const itemToDelete = libraryItems.find(item => item.id === id);
+    if (!itemToDelete) return;
+
+    setDeleteConfirmation({ isOpen: true, itemId: id, itemName: itemToDelete.jobTitle });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmation.itemId) return;
+
+    try {
+      await deleteFromLibrary(deleteConfirmation.itemId);
       const updated = await getLibrary();
       setLibraryItems(updated);
+      setSuccessMessage('Koleksi KPI berhasil dihapus.');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      setError(error.message || 'Gagal menghapus koleksi KPI.');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setDeleteConfirmation({ isOpen: false, itemId: null, itemName: '' });
     }
   };
 
@@ -338,7 +414,7 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo / Title Area */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setMode(AppMode.AI_GENERATOR)}>
+            <div className="flex items-center gap-2 cursor-pointer group" onClick={() => changeMode(AppMode.AI_GENERATOR)}>
               <div className="bg-brand-600 p-1.5 rounded-lg group-hover:bg-brand-700 transition-colors">
                 <Database className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
@@ -354,7 +430,7 @@ function AppContent() {
             <div className="flex gap-2 sm:gap-3 overflow-x-auto items-center no-scrollbar">
               <TokenDisplay />
               <button
-                onClick={() => setMode(AppMode.AI_GENERATOR)}
+                onClick={() => changeMode(AppMode.AI_GENERATOR)}
                 className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.AI_GENERATOR ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <Bot className="w-4 h-4" />
@@ -362,7 +438,7 @@ function AppContent() {
                 <span className="sm:hidden">AI</span>
               </button>
               <button
-                onClick={() => setMode(AppMode.MY_LIBRARY)}
+                onClick={() => changeMode(AppMode.MY_LIBRARY)}
                 className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.MY_LIBRARY ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -370,7 +446,7 @@ function AppContent() {
                 <span className="sm:hidden">Lib</span>
               </button>
               <button
-                onClick={() => setMode(AppMode.TOKEN_HISTORY)}
+                onClick={() => changeMode(AppMode.TOKEN_HISTORY)}
                 className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.TOKEN_HISTORY ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <History className="w-4 h-4" />
@@ -380,7 +456,7 @@ function AppContent() {
 
               {isAdmin && (
                 <button
-                  onClick={() => setMode(AppMode.ADMIN_DASHBOARD)}
+                  onClick={() => changeMode(AppMode.ADMIN_DASHBOARD)}
                   className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.ADMIN_DASHBOARD ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
                 >
                   <Shield className="w-4 h-4" />
@@ -564,6 +640,7 @@ function AppContent() {
             jobTitle={currentJobTitle || 'Draft'}
             onSaveToLibrary={handleSaveToLibrary}
             onUpdateKPI={handleUpdateKPI}
+            onJobTitleChange={(newTitle) => setCurrentJobTitle(newTitle)}
           />
         )}
       </main>
@@ -572,6 +649,12 @@ function AppContent() {
       <BuyTokenModal isOpen={showBuyTokenModal} onClose={() => setShowBuyTokenModal(false)} />
       <BulkUploadModal isOpen={showBulkUploadModal} onClose={() => setShowBulkUploadModal(false)} />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, itemId: null, itemName: '' })}
+        onConfirm={confirmDelete}
+        itemName={deleteConfirmation.itemName}
+      />
     </div>
   );
 }
@@ -586,6 +669,24 @@ function App() {
 
 function AppWithAuth() {
   const { user, loading: authLoading } = useAuth();
+  const [currentHash, setCurrentHash] = React.useState(window.location.hash.slice(1) || '/');
+
+  // Listen to hash changes
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash.slice(1) || '/');
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Redirect logged-in users away from login page
+  React.useEffect(() => {
+    if (!authLoading && user && currentHash === '/login') {
+      window.location.hash = '#/';
+    }
+  }, [user, authLoading, currentHash]);
 
   if (authLoading) {
     return (
@@ -595,11 +696,18 @@ function AppWithAuth() {
     );
   }
 
-  if (!user) {
+  // If user is logged in, always show main app
+  if (user) {
+    return <AppContent />;
+  }
+
+  // User not logged in - route based on hash
+  if (currentHash === '/login') {
     return <Login />;
   }
 
-  return <AppContent />;
+  // Default: show landing page
+  return <LandingPage onNavigateToLogin={() => window.location.hash = '#/login'} />;
 }
 
 export default App;

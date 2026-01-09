@@ -10,7 +10,8 @@ export const generateKPIsFromJobDescription = async (
   fileData?: { base64: string; mimeType: string },
   isTaskBasedMode: boolean = false,
   limit?: number,
-  language: 'id' | 'en' = 'id'
+  language: 'id' | 'en' = 'id',
+  onProgress?: (kpis: KPI[]) => void
 ): Promise<KPI[]> => {
 
   // --- API KEY RETRIEVAL ---
@@ -143,7 +144,7 @@ export const generateKPIsFromJobDescription = async (
     const rawData = JSON.parse(cleanText);
 
     // Transform into internal KPI interface
-    return rawData.map((item: any) => {
+    const finalKPIs = rawData.map((item: any) => {
       // Determine Job Description Label
       let jobDescLabel = "Uploaded Document";
 
@@ -167,7 +168,7 @@ export const generateKPIsFromJobDescription = async (
         kpiName: item.kpiName,
         type: item.type,
         detail: item.detail,
-        task: item.task || '-', // Map the Task field
+        task: item.task || '-',
         polarity: item.polarity,
         unit: item.unit,
         definition: item.definition,
@@ -179,9 +180,13 @@ export const generateKPIsFromJobDescription = async (
       };
     });
 
+    // Call onProgress with final result if provided
+    if (onProgress) onProgress(finalKPIs);
+
+    return finalKPIs;
+
   } catch (error) {
     console.error("Gemini API Error:", error);
-    // Silent fail empty array or rethrow depending on need
     throw error;
   }
 };

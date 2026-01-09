@@ -43,25 +43,34 @@ create policy "Users can update own token state"
 on public.user_tokens for update
 using ( auth.uid() = user_id );
 
+-- FIXED POLICY: Avoid infinite recursion by using a security definer function or simplified logic.
+-- Actually, since "Users can view own token state" already exists, the admin check subquery *should* be able to read the user's own row without recursion if structured correctly.
+-- But to be safe and fix the 42P17 error:
+-- We will rely on a database function to check admin status that bypasses RLS, or simply fix the policy.
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.user_tokens
+    WHERE user_id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- POLICY: Admins can view ALL data
--- We check if the requesting user has 'admin' role in their own user_token record
 create policy "Admins can view all token states"
 on public.user_tokens for select
 using (
-  exists (
-    select 1 from public.user_tokens
-    where user_id = auth.uid() and role = 'admin'
-  )
+  public.is_admin()
 );
 
--- POLICY: Admins can update ALL data (Add tokens, change roles)
+-- POLICY: Admins can update ALL data
 create policy "Admins can update all token states"
 on public.user_tokens for update
 using (
-  exists (
-    select 1 from public.user_tokens
-    where user_id = auth.uid() and role = 'admin'
-  )
+  public.is_admin()
 );
 
 -- OPTIONAL: Create a function to make the first user an admin if table is empty or via manual SQL

@@ -1,4 +1,6 @@
 import { supabase } from './supabaseClient';
+// Note: Emails are synced on user login via tokenServiceCloud. 
+// Ideally, a database trigger or batch job handles full sync.
 import { TokenState } from './tokenServiceCloud';
 
 export interface UserData extends TokenState {

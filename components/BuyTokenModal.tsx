@@ -87,13 +87,13 @@ export const BuyTokenModal: React.FC<BuyTokenModalProps> = ({ isOpen, onClose })
                         Silahkan hubungi admin untuk menambah token Anda.
                     </p>
 
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-brand-600 font-medium hover:text-brand-700 mt-2">
+                    <a href="https://wa.me/6285111031581" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-brand-600 font-medium hover:text-brand-700 mt-2">
                         Hubungi Admin via WhatsApp
                     </a>
                 </div>
 
-                <div className="p-4 bg-slate-50 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-                    <span>Powered by</span> <img src="https://cdn-site.doku.com/doku-landing/assets/images/logo/doku-logo.svg" alt="DOKU" className="h-4" />
+                <div className="p-4 bg-slate-50 text-center text-xs text-slate-500 flex items-center justify-center gap-1">
+                    <span>Powered by</span> <a href="http://betterandco.com" target="_blank" rel="noreferrer" className="font-bold text-slate-700 hover:text-brand-600">Better&Co.</a>
                 </div>
             </div>
         </div>

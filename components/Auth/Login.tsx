@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { Loader2, Mail, Lock, LogIn, UserPlus, X } from 'lucide-react';
-import { LandingPage } from '../LandingPage';
 
 export const Login: React.FC = () => {
-    const [showLanding, setShowLanding] = useState(true);
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -65,23 +63,10 @@ export const Login: React.FC = () => {
         }
     };
 
-    // Show landing page first
-    if (showLanding) {
-        return <LandingPage onGetStarted={() => setShowLanding(false)} />;
-    }
-
     // Show login/signup form
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-                {/* Back to Landing Button */}
-                <button
-                    onClick={() => setShowLanding(true)}
-                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Back to home"
-                >
-                    <X className="w-5 h-5" />
-                </button>
 
                 <div className="text-center mb-8">
                     <div className="bg-brand-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4">

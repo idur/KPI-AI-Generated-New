@@ -6,6 +6,35 @@ interface ProfileDropdownProps {
     onOpenProfile: () => void;
 }
 
+import { Shield, ShieldCheck } from 'lucide-react';
+
+const RoleBadge = () => {
+    const [role, setRole] = useState<string>('loading...');
+
+    useEffect(() => {
+        const fetchRole = async () => {
+            const { getTokenState } = await import('../../services/tokenServiceCloud');
+            const state = await getTokenState();
+            setRole(state.role || 'user');
+        };
+        fetchRole();
+    }, []);
+
+    if (role === 'admin') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wide">
+                <ShieldCheck className="w-3 h-3" /> ADMIN ACCESS
+            </span>
+        );
+    }
+
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide">
+            USER ACCOUNT
+        </span>
+    );
+};
+
 export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onOpenProfile }) => {
     const { user, signOut } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -63,6 +92,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onOpenProfile 
                     <div className="px-4 py-3 border-b border-slate-50">
                         <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
                         <p className="text-xs text-slate-500 truncate">{email}</p>
+                        <div className="mt-2">
+                            <RoleBadge />
+                        </div>
                     </div>
 
                     {/* Menu Items */}

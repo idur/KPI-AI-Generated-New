@@ -42,6 +42,8 @@ export const getTokenState = async (): Promise<TokenState> => {
         .eq('user_id', user.id)
         .single();
 
+    console.log('[DEBUG] TokenState Fetch:', { userId: user.id, data, error });
+
     if (error || !data) {
         // If no record exists, create one with 10 tokens (NON-RECURRING)
         const newState = {
@@ -61,6 +63,12 @@ export const getTokenState = async (): Promise<TokenState> => {
             email: user.email // Store email for Admin dashboard
         });
         return newState;
+    }
+
+    // Self-healing: Update email if it's missing or changed (e.g. for users created before email column existed)
+    if (user.email && (!data.email || data.email !== user.email)) {
+        await supabase.from('user_tokens').update({ email: user.email }).eq('user_id', user.id);
+        data.email = user.email; // Update local data object for return
     }
 
     return {
