@@ -12,11 +12,11 @@ const STORAGE_KEY = 'kpi_app_tokens';
 // Fallback to localStorage for offline/unauthenticated state
 const getLocalTokenState = (): TokenState => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return { freeTokens: 5, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+    if (!stored) return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
     try {
         return JSON.parse(stored);
     } catch {
-        return { freeTokens: 5, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+        return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
     }
 };
 
@@ -42,7 +42,7 @@ export const getTokenState = async (): Promise<TokenState> => {
 
     if (error || !data) {
         // If no record exists, create one
-        const newState = { freeTokens: 5, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+        const newState = { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
         await supabase.from('user_tokens').insert({
             user_id: user.id,
             free_tokens: newState.freeTokens,
@@ -147,7 +147,7 @@ export const checkDailyReset = async (): Promise<TokenState> => {
         console.log('[TokenService] Daily reset triggered');
         const newState = {
             ...state,
-            freeTokens: 5,
+            freeTokens: 10,
             lastResetDate: today
         };
         await saveTokenState(newState);
@@ -163,7 +163,7 @@ export const checkDailyReset = async (): Promise<TokenState> => {
                 .gte('created_at', `${today}T00:00:00Z`); // Check for transactions created today (UTC)
 
             if (count === 0) {
-                await logTransaction(5, 'DAILY_RESET', 'Daily free token reset');
+                await logTransaction(10, 'DAILY_RESET', 'Daily free token reset');
             } else {
                 console.log('[TokenService] Daily reset log already exists, skipping duplicate.');
             }

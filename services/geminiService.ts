@@ -40,7 +40,7 @@ export const generateKPIsFromJobDescription = async (
   // Default Prompt
   let promptText = `
     Bertindaklah sebagai konsultan HR expert. Buatlah daftar Key Performance Indicators (KPI) yang komprehensif untuk Job Description / Role berikut: "${jobDescription}".
-    ${limit ? `BATASAN PENTING: Buatlah MAKSIMAL ${limit} KPI saja. Jangan lebih.` : ''}
+    ${limit ? `BATASAN PENTING: Buatlah MINIMAL 10 KPI dan MAKSIMAL ${limit} KPI. Jangan kurang dari 10.` : 'Buatlah minimal 10 KPI.'}
     
     Pastikan KPI mencakup 4 perspektif Balanced Scorecard (Financial, Customer, Internal Process, Learning & Growth).
     
@@ -62,7 +62,7 @@ export const generateKPIsFromJobDescription = async (
       
       INSTRUKSI KHUSUS (WAJIB DIKUTI):
       1. Untuk SETIAP item "Tugas" yang tercantum dalam data di atas, Anda WAJIB merumuskan TEPAT 2 (DUA) KPI yang berbeda.
-      ${limit ? `2. PENTING: Total KPI yang dihasilkan TIDAK BOLEH LEBIH DARI ${limit} item secara keseluruhan. Pilih tugas yang paling prioritas jika perlu.` : '2. Jangan meringkas tugas. Jika ada 10 tugas, output harus ada 20 KPI.'}
+      ${limit ? `2. PENTING: Total KPI yang dihasilkan HARUS ANTARA 10 sampai ${limit} item secara keseluruhan. Jika tugas sedikit, satu tugas bisa memiliki lebih dari 2 KPI untuk mencapai minimal 10.` : '2. Jangan meringkas tugas. Minimal 10 KPI.'}
       3. Petakan setiap KPI ke dalam perspektif Balanced Scorecard yang paling relevan.
       4. PENTING: Sertakan teks asli "Tugas" yang menjadi dasar KPI tersebut di field 'task' pada output JSON.
       5. Identifikasi nama Role/Jabatan yang spesifik dari input dan masukkan ke field 'roleName'.
@@ -91,7 +91,7 @@ export const generateKPIsFromJobDescription = async (
         ${jobDescription ? `Konteks tambahan atau Judul Posisi: "${jobDescription}".` : ''}
         
         Berdasarkan dokumen tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
-        ${limit ? `BATASAN PENTING: Buatlah MAKSIMAL ${limit} KPI saja.` : ''}
+        ${limit ? `BATASAN PENTING: Buatlah MINIMAL 10 KPI dan MAKSIMAL ${limit} KPI.` : 'Buatlah minimal 10 KPI.'}
         
         Pastikan KPI mencakup 4 perspektif Balanced Scorecard.
         Sertakan analisis mengenai Target Audiens dan Tantangan Pengukuran.

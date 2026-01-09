@@ -182,8 +182,8 @@ function AppContent() {
             // Add Role metadata to KPIs if not present (optional, but good for context)
             const kpisWithRole = roleKPIs.map(k => ({ ...k, role: role }));
 
-            // Deduct tokens
-            const cost = roleKPIs.length;
+            // Deduct tokens (1 per role)
+            const cost = 1;
             await spendTokens(cost);
             refreshTokens();
             remainingTokens -= cost;
@@ -230,16 +230,16 @@ function AppContent() {
           setCurrentJobTitle(jobInput || "Generated Result");
         }
 
-        const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false, currentTotalTokens, language);
+        const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false, 20, language);
 
-        // Deduct Tokens based on result length
-        const cost = result.length;
+        // Deduct Tokens (1 Token per request, regardless of KPI count)
+        const cost = 1;
         await spendTokens(cost);
         refreshTokens();
 
         if (cost > currentTotalTokens) {
           // Should not happen if AI respects limit, but just in case
-          alert(`Peringatan: AI menghasilkan ${cost} KPI, melebihi saldo ${currentTotalTokens}.`);
+          alert(`Peringatan: Token habis.`);
         }
 
         setKpis(result);

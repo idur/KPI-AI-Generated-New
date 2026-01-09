@@ -74,42 +74,22 @@ export const BuyTokenModal: React.FC<BuyTokenModalProps> = ({ isOpen, onClose })
                     </button>
                 </div>
 
-                <div className="p-6 space-y-4">
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
-                        <p className="text-sm text-blue-800">
-                            <span className="font-bold">Status Anda:</span> {free} Token Harian (Gratis) + {paid} Token Premium.
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                            1 KPI = 1 Token. Token Harian reset setiap hari.
-                        </p>
+                <div className="p-8 text-center space-y-4">
+                    <div className="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Coins className="w-8 h-8 text-amber-600" />
                     </div>
+                    <h4 className="text-lg font-semibold text-slate-800">
+                        Top Up Token
+                    </h4>
+                    <p className="text-slate-600">
+                        Fitur pembayaran otomatis sedang dalam pemeliharaan.
 
-                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                        {PACKAGES.map((pkg) => (
-                            <button
-                                key={pkg.tokens}
-                                onClick={() => handleBuyPackage(pkg.tokens, pkg.price, pkg.priceLabel)}
-                                disabled={isProcessing}
-                                className={`w-full flex items-center justify-between p-3 border rounded-xl transition-all group relative overflow-hidden ${pkg.popular ? 'border-brand-200 bg-brand-50/50 hover:bg-brand-50' : 'border-slate-200 hover:border-brand-500 hover:bg-brand-50'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                {pkg.popular && (
-                                    <div className="absolute top-0 right-0 bg-brand-600 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">
-                                        POPULAR
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform ${pkg.popular ? 'bg-brand-100 text-brand-600' : 'bg-amber-100 text-amber-600'}`}>
-                                        {pkg.popular ? <CreditCard className="w-5 h-5" /> : <Coins className="w-5 h-5" />}
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-bold text-slate-900">{pkg.tokens} Token</p>
-                                        <p className="text-xs text-slate-500">{pkg.desc}</p>
-                                    </div>
-                                </div>
-                                <span className="font-bold text-brand-600 text-sm">{pkg.priceLabel}</span>
-                            </button>
-                        ))}
-                    </div>
+                        Silahkan hubungi admin untuk menambah token Anda.
+                    </p>
+
+                    <a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-brand-600 font-medium hover:text-brand-700 mt-2">
+                        Hubungi Admin via WhatsApp
+                    </a>
                 </div>
 
                 <div className="p-4 bg-slate-50 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
