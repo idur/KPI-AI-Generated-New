@@ -15,12 +15,14 @@ import { CSVGuide } from './components/CSVGuide';
 import { BulkUploadModal } from './components/BulkUploadModal';
 import { ProfileModal } from './components/Profile/ProfileModal';
 import { ProfileDropdown } from './components/Profile/ProfileDropdown';
-import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, RefreshCw, Info, FileSpreadsheet, LogOut, History, ArrowRight, User } from 'lucide-react';
+import { AdminDashboard } from './components/Admin/AdminDashboard';
+import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, RefreshCw, Info, FileSpreadsheet, LogOut, History, ArrowRight, User, Shield } from 'lucide-react';
 
 enum AppMode {
   AI_GENERATOR = 'AI Generator',
   MY_LIBRARY = 'My Library',
-  TOKEN_HISTORY = 'Token History'
+  TOKEN_HISTORY = 'Token History',
+  ADMIN_DASHBOARD = 'Admin Dashboard'
 }
 
 function AppContent() {
@@ -54,6 +56,23 @@ function AppContent() {
 
   // Token Hook
   const { total: totalTokens, spendTokens, refresh: refreshTokens } = useTokens();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user is admin
+    const checkRole = async () => {
+      try {
+        // We can re-use the function from tokenServiceCloud as it fetches the record
+        const { getTokenState } = await import('./services/tokenServiceCloud');
+        const state = await getTokenState();
+        setIsAdmin(state.role === 'admin');
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    checkRole();
+  }, [user]);
 
 
 
@@ -358,6 +377,17 @@ function AppContent() {
                 <span className="hidden sm:inline">History</span>
                 <span className="sm:hidden">Hist</span>
               </button>
+
+              {isAdmin && (
+                <button
+                  onClick={() => setMode(AppMode.ADMIN_DASHBOARD)}
+                  className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${mode === AppMode.ADMIN_DASHBOARD ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                  <span className="sm:hidden">Adm</span>
+                </button>
+              )}
             </div>
 
             {/* Profile Dropdown (Fixed) */}
@@ -517,6 +547,11 @@ function AppContent() {
         {/* --- TOKEN HISTORY MODE --- */}
         {mode === AppMode.TOKEN_HISTORY && (
           <TokenHistory />
+        )}
+
+        {/* --- ADMIN MODE --- */}
+        {mode === AppMode.ADMIN_DASHBOARD && isAdmin && (
+          <AdminDashboard />
         )}
 
 

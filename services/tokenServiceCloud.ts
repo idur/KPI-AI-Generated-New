@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
-interface TokenState {
+export interface TokenState {
     freeTokens: number;
     paidTokens: number;
-    lastResetDate: string; // YYYY-MM-DD
+    lastResetDate: string; // YYYY-MM-DD (Kept for legacy, though not used for auto-recurring anymore)
+    role?: 'admin' | 'user';
+    email?: string;
 }
 
 const STORAGE_KEY = 'kpi_app_tokens';
@@ -12,11 +14,11 @@ const STORAGE_KEY = 'kpi_app_tokens';
 // Fallback to localStorage for offline/unauthenticated state
 const getLocalTokenState = (): TokenState => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+    if (!stored) return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0], role: 'user' };
     try {
         return JSON.parse(stored);
     } catch {
-        return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+        return { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0], role: 'user' };
     }
 };
 
@@ -41,13 +43,22 @@ export const getTokenState = async (): Promise<TokenState> => {
         .single();
 
     if (error || !data) {
-        // If no record exists, create one
-        const newState = { freeTokens: 10, paidTokens: 0, lastResetDate: new Date().toISOString().split('T')[0] };
+        // If no record exists, create one with 10 tokens (NON-RECURRING)
+        const newState = {
+            freeTokens: 10,
+            paidTokens: 0,
+            lastResetDate: new Date().toISOString().split('T')[0],
+            role: 'user' as const,
+            email: user.email
+        };
+
         await supabase.from('user_tokens').insert({
             user_id: user.id,
             free_tokens: newState.freeTokens,
             paid_tokens: newState.paidTokens,
-            last_reset_date: newState.lastResetDate
+            last_reset_date: newState.lastResetDate,
+            role: 'user', // Default role
+            email: user.email // Store email for Admin dashboard
         });
         return newState;
     }
@@ -55,7 +66,9 @@ export const getTokenState = async (): Promise<TokenState> => {
     return {
         freeTokens: data.free_tokens,
         paidTokens: data.paid_tokens,
-        lastResetDate: data.last_reset_date
+        lastResetDate: data.last_reset_date,
+        role: data.role || 'user',
+        email: data.email
     };
 };
 
@@ -139,40 +152,10 @@ export const getTokenHistory = async (): Promise<TokenTransaction[]> => {
     return data || [];
 };
 
+// This function is deprecated for RECURRING resets, but kept for fetching state consistent naming in App.tsx
+// It now only ensures the token state exists.
 export const checkDailyReset = async (): Promise<TokenState> => {
-    const state = await getTokenState();
-    const today = new Date().toISOString().split('T')[0];
-
-    if (state.lastResetDate !== today) {
-        console.log('[TokenService] Daily reset triggered');
-        const newState = {
-            ...state,
-            freeTokens: 10,
-            lastResetDate: today
-        };
-        await saveTokenState(newState);
-
-        // Check if we already logged it to avoid duplicates from race conditions
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            const { count } = await supabase
-                .from('token_transactions')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-                .eq('type', 'DAILY_RESET')
-                .gte('created_at', `${today}T00:00:00Z`); // Check for transactions created today (UTC)
-
-            if (count === 0) {
-                await logTransaction(10, 'DAILY_RESET', 'Daily free token reset');
-            } else {
-                console.log('[TokenService] Daily reset log already exists, skipping duplicate.');
-            }
-        }
-
-        return newState;
-    }
-
-    return state;
+    return await getTokenState();
 };
 
 export const getTotalTokens = async (): Promise<number> => {
