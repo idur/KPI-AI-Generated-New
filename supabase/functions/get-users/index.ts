@@ -53,6 +53,8 @@ serve(async (req) => {
                 freeTokens: tokenData.free_tokens || 0, // Default to 0 if missing
                 paidTokens: tokenData.paid_tokens || 0,
                 lastResetDate: tokenData.last_reset_date,
+                resendCount: tokenData.resend_count || 0,
+                lastResendAt: tokenData.last_resend_at,
                 status: status, // Calculated status
                 last_login: u.last_sign_in_at
             };

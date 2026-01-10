@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getAllUsers, updateUserTokens, updateUserRole, UserData } from '../../services/adminService';
-import { Loader2, Search, Edit2, Check, X, Shield, ShieldAlert, Coins, UserPlus, RefreshCw } from 'lucide-react';
+import { getAllUsers, updateUserTokens, updateUserRole, resendInvite, UserData } from '../../services/adminService';
+import { Loader2, Search, Edit2, Check, X, Shield, ShieldAlert, Coins, UserPlus, RefreshCw, Send, Mail } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AddUserModal } from './AddUserModal';
@@ -15,6 +15,7 @@ export const AdminDashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showAddUserModal, setShowAddUserModal] = useState(false);
+    const [resendingEmails, setResendingEmails] = useState<Record<string, boolean>>({});
 
     // Edit Form State
     const [editForm, setEditForm] = useState<{
@@ -83,6 +84,21 @@ export const AdminDashboard: React.FC = () => {
         }
     };
 
+    const handleResendInvite = async (email: string) => {
+        if (resendingEmails[email]) return;
+
+        setResendingEmails(prev => ({ ...prev, [email]: true }));
+        try {
+            const result = await resendInvite(email);
+            success(result.message || `Undangan dikirim ulang ke ${email}. Sisa kuota: ${result.remaining}`);
+        } catch (error: any) {
+            console.error(error);
+            toastError(error.message || "Gagal mengirim ulang undangan.");
+        } finally {
+            setResendingEmails(prev => ({ ...prev, [email]: false }));
+        }
+    };
+
     const filteredUsers = users.filter(u =>
         (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.user_id.includes(searchTerm)
@@ -146,6 +162,12 @@ export const AdminDashboard: React.FC = () => {
                                     <tr key={user.user_id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{user.email}</div>
+                                            {user.status === 'invited' && (
+                                                <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                    <Mail className="w-3 h-3" />
+                                                    Pending Invite
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             {isEditing ? (
@@ -206,9 +228,33 @@ export const AdminDashboard: React.FC = () => {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => handleEditClick(user)} className="p-1.5 text-slate-400 hover:text-brand-600 transition-colors">
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {user.status === 'invited' && (
+                                                        <button
+                                                            onClick={() => user.email && handleResendInvite(user.email)}
+                                                            disabled={
+                                                                resendingEmails[user.email || ''] || 
+                                                                (!!user.resendCount && user.resendCount >= 3 && !!user.lastResendAt && new Date(user.lastResendAt).getDate() === new Date().getDate()) ||
+                                                                false
+                                                            }
+                                                            title={
+                                                                !!user.resendCount && user.resendCount >= 3 && !!user.lastResendAt && new Date(user.lastResendAt).getDate() === new Date().getDate()
+                                                                ? "Batas harian (3x) tercapai" 
+                                                                : "Resend Invitation Email"
+                                                            }
+                                                            className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {resendingEmails[user.email || ''] ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Send className="w-4 h-4" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleEditClick(user)} className="p-1.5 text-slate-400 hover:text-brand-600 transition-colors">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>

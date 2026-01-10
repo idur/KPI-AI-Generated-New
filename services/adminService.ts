@@ -6,6 +6,8 @@ import { TokenState } from './tokenServiceCloud';
 export interface UserData extends TokenState {
     id: string; // The primary key of user_tokens table
     user_id: string; // The auth.users id
+    resendCount?: number;
+    lastResendAt?: string;
 }
 
 export const getAllUsers = async (): Promise<UserData[]> => {
@@ -36,4 +38,15 @@ export const updateUserRole = async (userId: string, role: 'admin' | 'user') => 
         .eq('user_id', userId);
 
     if (error) throw error;
+};
+
+export const resendInvite = async (email: string) => {
+    const { data, error } = await supabase.functions.invoke('resend-invite', {
+        body: { email }
+    });
+
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    
+    return data;
 };

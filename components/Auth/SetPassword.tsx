@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { Loader2, Lock, ShieldCheck } from 'lucide-react';
 
@@ -7,6 +7,43 @@ export const SetPassword: React.FC = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+    const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+    useEffect(() => {
+        // Wait for session to be established from URL hash
+        const checkSession = async () => {
+            // Give Supabase client a moment to parse the hash
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const { data: { session } } = await supabase.auth.getSession();
+            setIsCheckingSession(false);
+            
+            if (!session) {
+                // If no session, but we have hash params, it might be an issue
+                if (window.location.hash.includes('access_token')) {
+                   // Let the user know we are trying
+                   console.log("Hash present but no session yet...");
+                } else {
+                    setMessage({ 
+                        type: 'error', 
+                        text: 'Link undangan tidak valid atau sudah kedaluwarsa. Silakan minta admin untuk mengirim ulang undangan.' 
+                    });
+                }
+            }
+        };
+        
+        checkSession();
+
+        // Also listen for auth state changes (in case it happens slightly later)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || session) {
+                setIsCheckingSession(false);
+                setMessage(null); // Clear error if we successfully got in
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const handleSetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,6 +106,14 @@ export const SetPassword: React.FC = () => {
             setLoading(false);
         }
     };
+
+    if (isCheckingSession) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
