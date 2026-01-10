@@ -128,7 +128,6 @@ export const AdminDashboard: React.FC = () => {
                                     <tr key={user.user_id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{user.email}</div>
-                                            <div className="text-xs text-slate-400 font-mono">{user.user_id.slice(0, 8)}...</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
