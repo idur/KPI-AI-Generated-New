@@ -11,6 +11,16 @@ export const SetPassword: React.FC = () => {
     const handleSetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Double check session existence
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            setMessage({ 
+                type: 'error', 
+                text: 'Sesi tidak valid atau kadaluarsa. Silakan klik link di email undangan Anda lagi.' 
+            });
+            return;
+        }
+
         if (password !== confirmPassword) {
             setMessage({ type: 'error', text: 'Passwords do not match' });
             return;

@@ -22,12 +22,12 @@ export const getAllUsers = async (): Promise<UserData[]> => {
     return data.map((item: any) => ({
         id: item.id,
         user_id: item.user_id,
-        email: item.email || 'No Email',
+        email: item.email || 'Processing...',
         freeTokens: item.free_tokens,
         paidTokens: item.paid_tokens,
         lastResetDate: item.last_reset_date,
         role: item.role || 'user',
-        status: item.status || 'active'
+        status: item.status || 'invited' // Default to invited if status is missing for new users
     }));
 };
 
