@@ -137,6 +137,17 @@ function AppContent() {
     checkRole();
   }, [user, refreshTokens]);
 
+  // Load library when navigating to library page
+  useEffect(() => {
+    const loadLibrary = async () => {
+      if (mode === AppMode.MY_LIBRARY) {
+        const items = await getLibrary();
+        setLibraryItems(items);
+      }
+    };
+    loadLibrary();
+  }, [mode]);
+
   if (roleCheckLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -148,18 +159,6 @@ function AppContent() {
   if (isInvited) {
     return <SetPassword />;
   }
-
-
-  // Load library when navigating to library page
-  useEffect(() => {
-    const loadLibrary = async () => {
-      if (mode === AppMode.MY_LIBRARY) {
-        const items = await getLibrary();
-        setLibraryItems(items);
-      }
-    };
-    loadLibrary();
-  }, [mode]);
 
 
 
