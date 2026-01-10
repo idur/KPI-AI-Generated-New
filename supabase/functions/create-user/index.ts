@@ -33,8 +33,14 @@ serve(async (req) => {
         }
 
         // 1. Invite the user (Sends standard Invite Email automatically)
+        // User MUST click the link in email which will bring them to the app.
         const { data: user, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-            data: { full_name: fullName }
+            data: {
+                full_name: fullName,
+                invited_at: new Date().toISOString()
+            },
+            // Redirect to the app with a hash that we can detect
+            redirectTo: 'http://localhost:3000/#/set-password'
         })
 
         if (createError) throw createError
@@ -54,6 +60,7 @@ serve(async (req) => {
                 email: email,
                 free_tokens: initialTokens,
                 role: 'user', // Default role for added user
+                status: 'invited', // Track that they haven't finished setup
                 last_reset_date: new Date().toISOString().split('T')[0]
             }, { onConflict: 'user_id' })
 

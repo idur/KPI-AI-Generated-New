@@ -26,7 +26,8 @@ export const getAllUsers = async (): Promise<UserData[]> => {
         freeTokens: item.free_tokens,
         paidTokens: item.paid_tokens,
         lastResetDate: item.last_reset_date,
-        role: item.role || 'user'
+        role: item.role || 'user',
+        status: item.status || 'active'
     }));
 };
 

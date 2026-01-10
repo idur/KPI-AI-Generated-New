@@ -18,6 +18,7 @@ import { ProfileDropdown } from './components/Profile/ProfileDropdown';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { LandingPage } from './components/LandingPage';
+import { SetPassword } from './components/Auth/SetPassword';
 import { Bot, Search, Loader2, Database, Upload, FileText, X, BookOpen, RefreshCw, Info, FileSpreadsheet, LogOut, History, ArrowRight, User, Shield } from 'lucide-react';
 
 enum AppMode {
@@ -696,7 +697,13 @@ function AppWithAuth() {
     );
   }
 
-  // If user is logged in, always show main app
+  // If on set-password route, show SetPassword component
+  // This can happen before or after actual user state is resolved by Supabase
+  if (currentHash.startsWith('/set-password')) {
+    return <SetPassword />;
+  }
+
+  // If user is logged in, show the main app
   if (user) {
     return <AppContent />;
   }

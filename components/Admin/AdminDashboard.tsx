@@ -112,6 +112,7 @@ export const AdminDashboard: React.FC = () => {
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                             <tr>
                                 <th className="px-6 py-4">User Email</th>
+                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4">Free Tokens</th>
                                 <th className="px-6 py-4">Paid Tokens</th>
@@ -128,6 +129,12 @@ export const AdminDashboard: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{user.email}</div>
                                             <div className="text-xs text-slate-400 font-mono">{user.user_id.slice(0, 8)}...</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                {user.status === 'active' ? 'Active' : 'Invited'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             {isEditing ? (

@@ -7,6 +7,7 @@ export interface TokenState {
     lastResetDate: string; // YYYY-MM-DD (Kept for legacy, though not used for auto-recurring anymore)
     role?: 'admin' | 'user';
     email?: string;
+    status?: 'invited' | 'active';
 }
 
 const STORAGE_KEY = 'kpi_app_tokens';
@@ -76,7 +77,8 @@ export const getTokenState = async (): Promise<TokenState> => {
         paidTokens: data.paid_tokens,
         lastResetDate: data.last_reset_date,
         role: data.role || 'user',
-        email: data.email
+        email: data.email,
+        status: data.status || 'active'
     };
 };
 
@@ -99,7 +101,7 @@ export const saveTokenState = async (state: TokenState) => {
             last_reset_date: state.lastResetDate
         })
         .eq('user_id', user.id)
-        .select('*', { count: 'exact' }); // Request count and return data
+        .select(); // Remove second argument for compatibility
 
     if (error) {
         console.error('[TokenService] Error saving token state:', error);
