@@ -116,21 +116,38 @@ function AppContent() {
   const { total: totalTokens, spendTokens, refresh: refreshTokens } = useTokens();
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isInvited, setIsInvited] = useState(false);
+  const [roleCheckLoading, setRoleCheckLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is admin
+    // Check if user is admin or invited
     const checkRole = async () => {
       try {
         // We can re-use the function from tokenServiceCloud as it fetches the record
         const { getTokenState } = await import('./services/tokenServiceCloud');
         const state = await getTokenState();
         setIsAdmin(state.role === 'admin');
+        setIsInvited(state.status === 'invited');
       } catch (e) {
         console.error(e);
+      } finally {
+        setRoleCheckLoading(false);
       }
     };
     checkRole();
   }, [user, refreshTokens]);
+
+  if (roleCheckLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (isInvited) {
+    return <SetPassword />;
+  }
 
 
   // Load library when navigating to library page

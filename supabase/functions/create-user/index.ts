@@ -32,6 +32,8 @@ serve(async (req) => {
             throw new Error("Email is required")
         }
 
+        const origin = req.headers.get('origin') || 'http://localhost:3000'
+
         // 1. Invite the user (Sends standard Invite Email automatically)
         // User MUST click the link in email which will bring them to the app.
         const { data: user, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
@@ -40,7 +42,7 @@ serve(async (req) => {
                 invited_at: new Date().toISOString()
             },
             // Redirect to the app with a hash that we can detect
-            redirectTo: 'http://localhost:3000/#/set-password'
+            redirectTo: `${origin}/#/set-password`
         })
 
         if (createError) throw createError
