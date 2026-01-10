@@ -209,9 +209,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelet
                             className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white"
                         >
                             <option value="">Semua Role</option>
-                            {uniqueRoles.map(role => (
-                                <option key={role} value={role}>{role}</option>
-                            ))}
+                            {uniqueRoles.map(role => {
+                                // Clean up role name for display in dropdown
+                                const displayRole = role.length > 50 && role.includes('Role:')
+                                    ? role.split('Role:')[1]?.split('Tugas')[0]?.trim() || role
+                                    : role;
+                                    
+                                return (
+                                    <option key={role} value={role}>{displayRole}</option>
+                                );
+                            })}
                         </select>
 
                         <select
@@ -280,7 +287,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelet
                                     </div>
 
                                     <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-brand-600 transition-colors">
-                                        {item.jobTitle}
+                                        {item.jobTitle.length > 50 && item.jobTitle.includes('Role:') 
+                                            ? item.jobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || item.jobTitle 
+                                            : item.jobTitle}
                                     </h3>
 
                                     <div className="flex items-center gap-4 text-sm text-slate-500 mb-6">
@@ -323,7 +332,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelet
                                                     <div className="font-medium text-slate-900">{kpi.kpiName}</div>
                                                     <div className="text-xs text-slate-500 mt-1 line-clamp-1">{kpi.definition}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-slate-600">{kpi.parentJobTitle}</td>
+                                                <td className="px-6 py-4 text-slate-600">
+                                                    {kpi.parentJobTitle.length > 50 && kpi.parentJobTitle.includes('Role:') 
+                                                        ? kpi.parentJobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || kpi.parentJobTitle 
+                                                        : kpi.parentJobTitle}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
                                                         {kpi.perspective}

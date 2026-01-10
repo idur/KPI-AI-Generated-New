@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { KPI } from '../types';
 import { KPICard } from './KPICard';
-import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark, Briefcase, Building2, Users, FileSpreadsheet, FileText, X } from 'lucide-react';
+import { Filter, Download, PieChart, CheckSquare, Square, Save, Bookmark, Briefcase, Building2, Users, FileSpreadsheet, FileText, X, Activity } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -20,6 +20,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [selectedDirektorat, setSelectedDirektorat] = useState<string>('All');
   const [selectedDivisi, setSelectedDivisi] = useState<string>('All');
+  const [selectedType, setSelectedType] = useState<string>('All');
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -71,6 +72,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
     return ['All', ...all];
   }, [kpis, selectedDirektorat]);
 
+  const types = useMemo(() => {
+    const all = Array.from(new Set(kpis.map(k => k.type))).sort();
+    return ['All', ...all];
+  }, [kpis]);
+
   // Apply All Filters
   const filteredKPIs = useMemo(() => {
     return kpis.filter(k => {
@@ -78,10 +84,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
       const matchRole = selectedRole === 'All' || k.jobDescription === selectedRole;
       const matchDirektorat = selectedDirektorat === 'All' || k.direktorat === selectedDirektorat;
       const matchDivisi = selectedDivisi === 'All' || k.divisi === selectedDivisi;
+      const matchType = selectedType === 'All' || k.type === selectedType;
 
-      return matchPerspective && matchRole && matchDirektorat && matchDivisi;
+      return matchPerspective && matchRole && matchDirektorat && matchDivisi && matchType;
     });
-  }, [kpis, selectedPerspective, selectedRole, selectedDirektorat, selectedDivisi]);
+  }, [kpis, selectedPerspective, selectedRole, selectedDirektorat, selectedDivisi, selectedType]);
 
   // Selection Logic
   const toggleSelection = (id: string) => {
@@ -291,7 +298,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
                 onClick={() => setIsEditingTitle(true)}
                 title="Click to edit"
               >
-                <span>Library KPI: <span className="text-brand-600">{jobTitle}</span></span>
+                {/* Use a cleaner display logic: If title is very long (contains 'Role:' and 'Tugas:'), truncate or parse it */}
+                <span>Library KPI: <span className="text-brand-600">
+                  {jobTitle.length > 50 && jobTitle.includes('Role:') 
+                    ? jobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || jobTitle 
+                    : jobTitle}
+                </span></span>
                 <span className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">(click to edit)</span>
               </h2>
             )}
@@ -372,17 +384,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
         </div>
 
         {/* Bottom Row: Filters (Responsive Grid) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-slate-100">
           {/* Perspective Filter (Always Visible) */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <select
               value={selectedPerspective}
               onChange={(e) => setSelectedPerspective(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer"
+              className={`pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer ${selectedPerspective !== 'All' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50/20' : ''}`}
             >
               {perspectives.map(p => (
                 <option key={p} value={p}>{p === 'All' ? 'Semua Perspektif' : p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div className="relative">
+            <Activity className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className={`pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full appearance-none cursor-pointer ${selectedType !== 'All' ? 'border-brand-500 ring-1 ring-brand-500 bg-brand-50/20' : ''}`}
+            >
+              <option value="All">Semua Jenis KPI</option>
+              {types.filter(t => t !== 'All').map(t => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>

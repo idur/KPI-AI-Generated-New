@@ -26,8 +26,17 @@ export const SetPassword: React.FC = () => {
             return;
         }
 
-        if (password.length < 6) {
-            setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+        if (password.length < 8) {
+            setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
+            return;
+        }
+
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+            setMessage({ 
+                type: 'error', 
+                text: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.' 
+            });
             return;
         }
 
@@ -94,7 +103,7 @@ export const SetPassword: React.FC = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all text-slate-900"
-                                placeholder="Min. 6 characters"
+                                placeholder="Min. 8 chars, A-Z, 0-9, symbol"
                             />
                         </div>
                     </div>

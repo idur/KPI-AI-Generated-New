@@ -11,7 +11,8 @@ export const generateKPIsFromJobDescription = async (
   isTaskBasedMode: boolean = false,
   limit?: number,
   language: 'id' | 'en' = 'id',
-  onProgress?: (kpis: KPI[]) => void
+  onProgress?: (kpis: KPI[]) => void,
+  forcedJobLabel?: string // New optional parameter
 ): Promise<KPI[]> => {
 
   // --- API KEY RETRIEVAL ---
@@ -49,6 +50,7 @@ export const generateKPIsFromJobDescription = async (
     1. Detail KPI standar (definisi, rumus, sumber data).
     2. Target Audiens: Siapa stakeholder utama yang berkepentingan dengan metrik ini?
     3. Tantangan Pengukuran: Apa kesulitan potensial, bias, atau hambatan teknis dalam mengukur KPI ini secara akurat?
+    4. Rekomendasi Skema Skoring: Berikan panduan lengkap cara memberikan nilai/skor untuk KPI ini. Pilih SATU metode yang paling relevan (Persentase, Skala Khusus 1-5, Skala 0-1, atau Simple Scoring). Jelaskan definisinya, berikan tabel/kriteria penilaian yang jelas, dan contoh perhitungan.
     
     ${langInstruction}
   `;
@@ -67,8 +69,9 @@ export const generateKPIsFromJobDescription = async (
       3. Petakan setiap KPI ke dalam perspektif Balanced Scorecard yang paling relevan.
       4. PENTING: Sertakan teks asli "Tugas" yang menjadi dasar KPI tersebut di field 'task' pada output JSON.
       5. Identifikasi nama Role/Jabatan yang spesifik dari input dan masukkan ke field 'roleName'.
+      6. Sertakan Rekomendasi Skema Skoring yang detail dan aplikatif.
       
-      Untuk setiap KPI, berikan analisis lengkap (Definisi, Rumus, Target Audiens, dll).
+      Untuk setiap KPI, berikan analisis lengkap (Definisi, Rumus, Target Audiens, Scoring System, dll).
       Buat deskripsi yang PADAT dan RINGKAS (Concise) untuk menghemat token output.
       
       ${langInstruction}
@@ -95,7 +98,7 @@ export const generateKPIsFromJobDescription = async (
         ${limit ? `BATASAN PENTING: Buatlah MINIMAL 10 KPI dan MAKSIMAL ${limit} KPI.` : 'Buatlah minimal 10 KPI.'}
         
         Pastikan KPI mencakup 4 perspektif Balanced Scorecard.
-        Sertakan analisis mengenai Target Audiens dan Tantangan Pengukuran.
+        Sertakan analisis mengenai Target Audiens, Tantangan Pengukuran, dan Rekomendasi Skema Skoring.
         ${langInstruction}
       `;
     }
@@ -127,7 +130,8 @@ export const generateKPIsFromJobDescription = async (
               formula: { type: Type.STRING, description: "Rumus perhitungan" },
               measurement: { type: Type.STRING, description: "Frekuensi pengukuran" },
               targetAudience: { type: Type.STRING, description: "Stakeholder utama" },
-              measurementChallenges: { type: Type.STRING, description: "Potensi hambatan pengukuran" }
+              measurementChallenges: { type: Type.STRING, description: "Potensi hambatan pengukuran" },
+              scoringSystem: { type: Type.STRING, description: "Rekomendasi skema skoring lengkap dengan tabel/kriteria" }
             },
             required: ["perspective", "kpiName", "type", "detail", "polarity", "unit", "definition", "dataSource", "formula", "measurement"]
           }
@@ -148,7 +152,9 @@ export const generateKPIsFromJobDescription = async (
       // Determine Job Description Label
       let jobDescLabel = "Uploaded Document";
 
-      if (isTaskBasedMode) {
+      if (forcedJobLabel) {
+        jobDescLabel = forcedJobLabel;
+      } else if (isTaskBasedMode) {
         // Priority 1: AI Extracted Role Name
         if (item.roleName && item.roleName !== "Unknown") {
           jobDescLabel = item.roleName;
@@ -176,7 +182,8 @@ export const generateKPIsFromJobDescription = async (
         formula: item.formula,
         measurement: item.measurement,
         targetAudience: item.targetAudience,
-        measurementChallenges: item.measurementChallenges
+        measurementChallenges: item.measurementChallenges,
+        scoringSystem: item.scoringSystem
       };
     });
 

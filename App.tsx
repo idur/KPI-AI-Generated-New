@@ -267,10 +267,11 @@ function AppContent() {
 
           try {
             // Generate KPIs for this role
-            const roleKPIs = await generateKPIsFromJobDescription(combinedJobDescription, null, false, remainingTokens, language);
+            // FIX: Pass 'role' as the jobDescription label explicitly so the UI uses just the Role Name
+            const roleKPIs = await generateKPIsFromJobDescription(combinedJobDescription, null, false, remainingTokens, language, undefined, role);
 
-            // Add Role metadata to KPIs if not present (optional, but good for context)
-            const kpisWithRole = roleKPIs.map(k => ({ ...k, role: role }));
+            // Add Role metadata to KPIs (overwrite jobDescription with the specific Role Name)
+            const kpisWithRole = roleKPIs.map(k => ({ ...k, jobDescription: role }));
 
             // Deduct tokens (1 per role)
             const cost = 1;
@@ -291,6 +292,10 @@ function AppContent() {
         }
 
         setCurrentJobTitle(`Batch Import (${processedCount} Roles)`);
+        
+        // Clean up the job title to only show the count, not the huge string
+        // The individual cards will handle their own titles via the kpis state
+        
         success(`Batch processing selesai! Berhasil memproses ${processedCount} dari ${totalRoles} peran.`);
       }
       // Standard PDF/Text Handling (Single Request)
@@ -353,15 +358,37 @@ function AppContent() {
     if (!currentJobTitle) return;
 
     try {
-      await saveToLibrary({
-        id: crypto.randomUUID(),
-        jobTitle: currentJobTitle,
-        kpis: kpisToSave,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+      // Group KPIs by jobDescription (Role)
+      const kpisByRole: Record<string, KPI[]> = {};
+      
+      kpisToSave.forEach(kpi => {
+        const role = kpi.jobDescription || "Untitled Role";
+        if (!kpisByRole[role]) {
+          kpisByRole[role] = [];
+        }
+        kpisByRole[role].push(kpi);
       });
-      success(`Berhasil menyimpan ${kpisToSave.length} KPI untuk "${currentJobTitle}" ke My Library.`);
+
+      const roles = Object.keys(kpisByRole);
+      
+      // Save each group as a separate library entry
+      for (const role of roles) {
+        await saveToLibrary({
+          id: crypto.randomUUID(),
+          jobTitle: role, // Use the role name as the title
+          kpis: kpisByRole[role],
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      }
+
+      if (roles.length > 1) {
+        success(`Berhasil menyimpan ${roles.length} item library terpisah (per Role).`);
+      } else {
+        success(`Berhasil menyimpan ${kpisToSave.length} KPI untuk "${roles[0] || currentJobTitle}" ke My Library.`);
+      }
     } catch (err) {
+      console.error(err);
       toastError("Gagal menyimpan ke library.");
     }
   };

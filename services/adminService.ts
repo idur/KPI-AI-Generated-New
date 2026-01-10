@@ -9,34 +9,15 @@ export interface UserData extends TokenState {
 }
 
 export const getAllUsers = async (): Promise<UserData[]> => {
-    // 1. Trigger sync to ensure statuses are up to date
     try {
-        await supabase.functions.invoke('sync-users');
+        // Use the new secure Admin API to fetch users
+        const { data, error } = await supabase.functions.invoke('get-users');
+        if (error) throw error;
+        return data;
     } catch (e) {
-        console.warn("Failed to sync users before fetching:", e);
-        // Continue anyway, showing cached data
+        console.error("Failed to fetch users via Admin API:", e);
+        throw e;
     }
-
-    const { data, error } = await supabase
-        .from('user_tokens')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
-    }
-
-    return data.map((item: any) => ({
-        id: item.id,
-        user_id: item.user_id,
-        email: item.email || 'Processing...',
-        freeTokens: item.free_tokens,
-        paidTokens: item.paid_tokens,
-        lastResetDate: item.last_reset_date,
-        role: item.role || 'user',
-        status: item.status || 'invited' // Default to invited if status is missing for new users
-    }));
 };
 
 export const updateUserTokens = async (userId: string, freeTokens: number, paidTokens: number) => {

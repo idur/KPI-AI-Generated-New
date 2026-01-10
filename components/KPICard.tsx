@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { KPI } from '../types';
-import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle, Building2, Briefcase, ClipboardList, Pencil, Save, RotateCcw } from 'lucide-react';
+import { Target, Activity, BarChart2, X, Eye, Info, Book, Database, Calculator, Check, Users, AlertTriangle, Building2, Briefcase, ClipboardList, Pencil, Save, RotateCcw, Award } from 'lucide-react';
 
 interface KPICardProps {
   kpi: KPI;
@@ -73,7 +73,11 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
           <div className="mb-4 pr-8">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-md shadow-sm">
               <Briefcase className="w-3 h-3 text-brand-300" />
-              <span className="uppercase tracking-wide truncate max-w-[200px]">{kpi.jobDescription}</span>
+              <span className="uppercase tracking-wide truncate max-w-[200px]">
+                {kpi.jobDescription.length > 50 && kpi.jobDescription.includes('Role:')
+                  ? kpi.jobDescription.split('Role:')[1]?.split('Tugas')[0]?.trim() || kpi.jobDescription
+                  : kpi.jobDescription}
+              </span>
             </div>
           </div>
 
@@ -131,7 +135,11 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 {/* Role Badge in Header */}
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-md shadow-sm mb-3">
                   <Briefcase className="w-3 h-3 text-brand-300" />
-                  <span className="uppercase tracking-wide">{kpi.jobDescription}</span>
+                  <span className="uppercase tracking-wide">
+                    {kpi.jobDescription.length > 50 && kpi.jobDescription.includes('Role:')
+                      ? kpi.jobDescription.split('Role:')[1]?.split('Tugas')[0]?.trim() || kpi.jobDescription
+                      : kpi.jobDescription}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 mb-2">
@@ -380,6 +388,34 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Scoring System Recommendation */}
+                {(kpi.scoringSystem || isEditing) && (
+                  <div className="pt-6 border-t border-slate-100 mt-6">
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
+                      <Award className="w-4 h-4 text-brand-600" />
+                      Rekomendasi Skema Skoring
+                    </h4>
+                    <div className="text-slate-700 text-sm bg-blue-50/50 p-6 rounded-xl border border-blue-100 leading-relaxed shadow-sm">
+                      {isEditing ? (
+                        <textarea
+                          value={editedKpi.scoringSystem || ''}
+                          onChange={(e) => handleChange('scoringSystem', e.target.value)}
+                          rows={8}
+                          className="w-full bg-white border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono text-xs leading-relaxed"
+                          placeholder="Masukkan rekomendasi skema skoring..."
+                        />
+                      ) : (
+                        <div className="prose prose-sm max-w-none text-slate-700">
+                          {/* We use a simple whitespace-pre-wrap div but styled better */}
+                          <div className="whitespace-pre-wrap font-normal leading-7">
+                            {kpi.scoringSystem}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

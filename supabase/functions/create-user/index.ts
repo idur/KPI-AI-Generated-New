@@ -41,10 +41,8 @@ serve(async (req) => {
                 full_name: fullName,
                 invited_at: new Date().toISOString()
             },
-            // Redirect to the app root. Supabase will append #access_token=...
-            // The App component will detect the session and the 'invited' status,
-            // then render the SetPassword component automatically.
-            redirectTo: `${origin}`
+            // Redirect to the set-password route specifically
+            redirectTo: `${origin}/#/set-password`
         })
 
         if (createError) throw createError

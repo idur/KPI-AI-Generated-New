@@ -26,6 +26,7 @@ export interface KPI {
   task?: string; // Original Task context
   targetAudience?: string;
   measurementChallenges?: string;
+  scoringSystem?: string; // New field for Scoring System Recommendation
   // New fields for PID Library
   direktorat?: string;
   divisi?: string;

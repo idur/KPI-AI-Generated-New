@@ -38,16 +38,14 @@ export const AdminDashboard: React.FC = () => {
 
     const handleSyncUsers = async () => {
         setSyncing(true);
-        info('Menyinkronkan status user...');
+        // info('Menyinkronkan status user...'); // No longer needed
         try {
-            const { data, error } = await supabase.functions.invoke('sync-users');
-            if (error) throw error;
-            
-            success(`Sync selesai. ${data.message || 'Data terupdate.'}`);
-            loadUsers();
+            // We just reload users now, as getAllUsers handles the fetch-merge
+            await loadUsers();
+            success(`Data updated.`);
         } catch (error: any) {
             console.error(error);
-            toastError(`Gagal sync user: ${error.message}. Pastikan function 'sync-users' sudah dideploy.`);
+            toastError(`Gagal load user: ${error.message}`);
         } finally {
             setSyncing(false);
         }
@@ -106,16 +104,6 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                        onClick={handleSyncUsers}
-                        disabled={syncing}
-                        className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors font-medium whitespace-nowrap disabled:opacity-50"
-                        title="Sync status user dari Supabase Auth"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Sync Status</span>
-                    </button>
-
                     <div className="relative flex-1 sm:flex-none">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
@@ -143,7 +131,6 @@ export const AdminDashboard: React.FC = () => {
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                             <tr>
                                 <th className="px-6 py-4">User Email</th>
-                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4">Free Tokens</th>
                                 <th className="px-6 py-4">Paid Tokens</th>
@@ -159,12 +146,6 @@ export const AdminDashboard: React.FC = () => {
                                     <tr key={user.user_id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{user.email}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                {user.status === 'active' ? 'Active' : 'Invited'}
-                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             {isEditing ? (
