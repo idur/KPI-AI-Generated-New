@@ -58,11 +58,11 @@ export const AdminDashboard: React.FC = () => {
             // Update Tokens
             await updateUserTokens(userId, editForm.freeTokens, editForm.paidTokens);
 
-            altrtUser berhasil diupdate!');
+            success('User berhasil diupdate!');
             setEditingId(null);
             loadUsers(); // Refresh list
         } catch (error: any) {
-            elertal update user: ' + error.message);
+            toastError('Gagal update user: ' + error.message);
         }
     };
 
