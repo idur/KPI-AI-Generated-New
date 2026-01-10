@@ -87,6 +87,16 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                        onClick={handleSyncUsers}
+                        disabled={syncing}
+                        className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors font-medium whitespace-nowrap disabled:opacity-50"
+                        title="Sync status user dari Supabase Auth"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Sync Status</span>
+                    </button>
+
                     <div className="relative flex-1 sm:flex-none">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
