@@ -9,6 +9,14 @@ export interface UserData extends TokenState {
 }
 
 export const getAllUsers = async (): Promise<UserData[]> => {
+    // 1. Trigger sync to ensure statuses are up to date
+    try {
+        await supabase.functions.invoke('sync-users');
+    } catch (e) {
+        console.warn("Failed to sync users before fetching:", e);
+        // Continue anyway, showing cached data
+    }
+
     const { data, error } = await supabase
         .from('user_tokens')
         .select('*')
