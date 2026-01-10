@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, UserPlus, Loader2, Mail, User, Coins } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
+import { useToast } from '../../contexts/ToastContext';
 
 interface AddUserModalProps {
     isOpen: boolean;
@@ -9,6 +10,7 @@ interface AddUserModalProps {
 }
 
 export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSuccess }) => {
+    const { success, error: toastError } = useToast();
     const [email, setEmail] = useState('');
     const [fullName, setFullName] = useState('');
     const [initialTokens, setInitialTokens] = useState(10);
@@ -54,7 +56,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
             }
 
             // Success
-            alert(`Undangan berhasil dikirim ke: ${email}`);
+            success(`Undangan berhasil dikirim ke: ${email}`);
             onSuccess();
             onClose();
 
@@ -62,6 +64,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onS
             console.error(err);
             // Fallback instruction if function fails
             setError(err.message || "Gagal mengundang user.");
+            toastError("Gagal mengundang user.");
         } finally {
             setLoading(false);
         }

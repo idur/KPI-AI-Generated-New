@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { getAllUsers, updateUserTokens, updateUserRole, UserData } from '../../services/adminService';
 import { Loader2, Search, Edit2, Check, X, Shield, ShieldAlert, Coins, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { AddUserModal } from './AddUserModal';
 
 export const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
+    const { success, error: toastError } = useToast();
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +28,7 @@ export const AdminDashboard: React.FC = () => {
             setUsers(data);
         } catch (error) {
             console.error(error);
-            alert('Gagal memuat data user. Pastikan Anda memiliki akses Admin.');
+            toastError('Gagal memuat data user. Pastikan Anda memiliki akses Admin.');
         } finally {
             setLoading(false);
         }
@@ -56,11 +58,11 @@ export const AdminDashboard: React.FC = () => {
             // Update Tokens
             await updateUserTokens(userId, editForm.freeTokens, editForm.paidTokens);
 
-            alert('User berhasil diupdate!');
+            altrtUser berhasil diupdate!');
             setEditingId(null);
             loadUsers(); // Refresh list
         } catch (error: any) {
-            alert('Gagal update user: ' + error.message);
+            elertal update user: ' + error.message);
         }
     };
 

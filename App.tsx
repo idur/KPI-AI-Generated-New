@@ -9,6 +9,7 @@ import { TokenDisplay } from './components/TokenDisplay';
 import { BuyTokenModal } from './components/BuyTokenModal';
 import { useTokens, getTotalTokens } from './services/tokenServiceCloud';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { Login } from './components/Auth/Login';
 import { LibraryView } from './components/LibraryView';
 import { CSVGuide } from './components/CSVGuide';
@@ -63,6 +64,7 @@ const setHashFromMode = (mode: AppMode) => {
 
 function AppContent() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { showToast, success, error: toastError, warning } = useToast();
   const [mode, setMode] = useState<AppMode>(getRouteFromHash());
 
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,6 @@ function AppContent() {
   const [currentLibraryId, setCurrentLibraryId] = useState<string | null>(null); // Track loaded library item
 
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [language, setLanguage] = useState<'id' | 'en'>('id');
 
   // AI State
@@ -167,7 +168,7 @@ function AppContent() {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       if (file.size > 5 * 1024 * 1024) {
-        alert("File terlalu besar. Maksimum 5MB.");
+        warning("File terlalu besar. Maksimum 5MB.");
         return;
       }
       setSelectedFile(file);
@@ -209,7 +210,6 @@ function AppContent() {
     setLoading(true);
     setLoadingStatus('Menganalisis permintaan...');
     setError(null);
-    setSuccessMessage(null);
     setKpis([]);
     setMasterKpis([]); // Clear master in AI mode
     setCurrentLibraryId(null); // Clear library ID as this is a new generation
@@ -291,8 +291,7 @@ function AppContent() {
         }
 
         setCurrentJobTitle(`Batch Import (${processedCount} Roles)`);
-        setSuccessMessage(`Batch processing selesai! Berhasil memproses ${processedCount} dari ${totalRoles} peran.`);
-        setTimeout(() => setSuccessMessage(null), 5000);
+        success(`Batch processing selesai! Berhasil memproses ${processedCount} dari ${totalRoles} peran.`);
       }
       // Standard PDF/Text Handling (Single Request)
       else {
@@ -335,7 +334,7 @@ function AppContent() {
 
         if (cost > currentTotalTokens) {
           // Should not happen if AI respects limit, but just in case
-          alert(`Peringatan: Token habis.`);
+          warning(`Peringatan: Token habis.`);
         }
 
         setKpis(result);
@@ -361,10 +360,9 @@ function AppContent() {
         createdAt: Date.now(),
         updatedAt: Date.now()
       });
-      setSuccessMessage(`Berhasil menyimpan ${kpisToSave.length} KPI untuk "${currentJobTitle}" ke My Library.`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success(`Berhasil menyimpan ${kpisToSave.length} KPI untuk "${currentJobTitle}" ke My Library.`);
     } catch (err) {
-      setError("Gagal menyimpan ke library.");
+      toastError("Gagal menyimpan ke library.");
     }
   };
 
@@ -393,11 +391,9 @@ function AppContent() {
       await deleteFromLibrary(deleteConfirmation.itemId);
       const updated = await getLibrary();
       setLibraryItems(updated);
-      setSuccessMessage('Koleksi KPI berhasil dihapus.');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success('Koleksi KPI berhasil dihapus.');
     } catch (error: any) {
-      setError(error.message || 'Gagal menghapus koleksi KPI.');
-      setTimeout(() => setError(null), 5000);
+      toastError(error.message || 'Gagal menghapus koleksi KPI.');
     } finally {
       setDeleteConfirmation({ isOpen: false, itemId: null, itemName: '' });
     }
@@ -490,13 +486,6 @@ function AppContent() {
           </div>
         </div>
       </header>
-
-      {/* Contextual Success Message */}
-      {successMessage && (
-        <div className="fixed top-20 right-4 z-[60] bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
-          {successMessage}
-        </div>
-      )}
 
       {/* --- AI GENERATOR MODE INPUT --- */}
       {mode === AppMode.AI_GENERATOR && (
@@ -679,7 +668,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppWithAuth />
+      <ToastProvider>
+        <AppWithAuth />
+      </ToastProvider>
     </AuthProvider>
   );
 }

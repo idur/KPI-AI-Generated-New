@@ -3,6 +3,8 @@ import { Coins, CreditCard, X, Loader2 } from 'lucide-react';
 import { useTokens } from '../services/tokenServiceCloud';
 import { initiatePayment } from '../services/paymentService';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface BuyTokenModalProps {
     isOpen: boolean;
