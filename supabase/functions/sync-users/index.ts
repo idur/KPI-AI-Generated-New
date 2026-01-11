@@ -31,17 +31,15 @@ serve(async (req) => {
         const enrichedUsers = [];
 
         for (const user of users) {
+            // Default to 'invited'. We do NOT auto-promote to 'active' based on email_confirmed_at
+            // because we require the user to explicitly set their password in the app.
+            // The 'active' status is set by the SetPassword component/flow.
             let status = 'invited';
-            if (user.last_sign_in_at || user.email_confirmed_at) {
-                status = 'active';
-            }
 
-            // ... (keep typo handling logic if needed, or simplify if resolved)
-            
             // --- SPECIAL TYPO HANDLING FOR RUDY ---
             let potentialTypoEmail = null;
             if (user.email === 'rudyrahadian@gmail.com') {
-                status = 'active'; 
+                status = 'active'; // Exception for admin/owner if needed
                 potentialTypoEmail = 'rudyrhadian@gmail.com'; 
             }
 
@@ -116,9 +114,10 @@ serve(async (req) => {
                 }
 
                 // Update Master
-                // We do NOT attempt to write last_login to DB to avoid error if column missing
+                // We preserve the existing status from the database record instead of overwriting it with 'invited'
+                // This ensures that if a user is already 'active', they stay 'active'.
                 const { data: updatedRecord } = await supabaseAdmin.from('user_tokens').update({
-                    status: status,
+                    // status: status, // REMOVED: Do not overwrite status during sync
                     user_id: user.id,
                     email: user.email,
                     paid_tokens: totalPaid,
