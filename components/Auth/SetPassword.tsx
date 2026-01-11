@@ -12,17 +12,44 @@ export const SetPassword: React.FC = () => {
     useEffect(() => {
         // Wait for session to be established from URL hash
         const checkSession = async () => {
-            // Give Supabase client a moment to parse the hash
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
+            // Retry loop for session establishment
+            let attempts = 0;
+            const maxAttempts = 5; // Try for 5 seconds
+
+            while (attempts < maxAttempts) {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    console.log("Session established successfully.");
+                    setIsCheckingSession(false);
+                    setMessage(null);
+                    return;
+                }
+
+                // If hash contains access_token but session is null, wait and retry
+                if (window.location.hash.includes('access_token')) {
+                    console.log(`Hash present but no session yet. Attempt ${attempts + 1}/${maxAttempts}...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                } else {
+                    // No hash token? Maybe we are just visiting the page manually?
+                    // But if we are here via invite, we expect a session.
+                    // Let's break early if there's absolutely no token in URL
+                    break;
+                }
+            }
+
+            // Final check
             const { data: { session } } = await supabase.auth.getSession();
             setIsCheckingSession(false);
             
             if (!session) {
-                // If no session, but we have hash params, it might be an issue
                 if (window.location.hash.includes('access_token')) {
-                   // Let the user know we are trying
-                   console.log("Hash present but no session yet...");
+                   console.error("Failed to establish session despite token presence.");
+                   setMessage({ 
+                       type: 'error', 
+                       text: 'Gagal memverifikasi sesi. Token mungkin tidak valid atau browser memblokir cookie. Silakan coba lagi atau minta undangan baru.' 
+                   });
                 } else {
                     setMessage({ 
                         type: 'error', 

@@ -55,8 +55,9 @@ serve(async (req) => {
 
         // 2. Resend Invitation
         // We use inviteUserByEmail again. If user exists and is invited, it resends the link.
+        // Redirect to origin/root to avoid hash conflicts. App.tsx handles routing.
         const { data: user, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-            redirectTo: `${origin}/#/set-password`
+            redirectTo: `${origin}/`
         })
 
         if (inviteError) throw inviteError

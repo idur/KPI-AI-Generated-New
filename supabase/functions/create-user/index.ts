@@ -41,8 +41,8 @@ serve(async (req) => {
                 full_name: fullName,
                 invited_at: new Date().toISOString()
             },
-            // Redirect to the set-password route specifically
-            redirectTo: `${origin}/#/set-password`
+            // Redirect to the origin (root) - App.tsx handles the routing based on 'invited' status
+            redirectTo: `${origin}/`
         })
 
         if (createError) throw createError
