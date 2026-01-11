@@ -86,7 +86,7 @@ serve(async (req) => {
                     email: user.email,
                     status: status,
                     role: 'user',
-                    free_tokens: 5,
+                    free_tokens: 10,
                     paid_tokens: 0,
                     last_reset_date: new Date().toISOString().split('T')[0],
                     // We attempt to save last_login, but if it fails (no column), we ignore

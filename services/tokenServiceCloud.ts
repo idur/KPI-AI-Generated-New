@@ -72,6 +72,13 @@ export const getTokenState = async (): Promise<TokenState> => {
         data.email = user.email; // Update local data object for return
     }
 
+    // CRITICAL: Check if user is actually confirmed in Auth but status is still 'invited' in DB
+    // This happens if they click the magic link (which confirms them) but haven't set password yet.
+    // However, we want to force them to set password.
+    // If they have a confirmed_at date, they are technically active in Supabase, 
+    // but our app requires a password set.
+    // We rely on the 'status' column in user_tokens to track if they finished the setup flow.
+    
     return {
         freeTokens: data.free_tokens,
         paidTokens: data.paid_tokens,

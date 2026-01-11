@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { getAllUsers, updateUserTokens, updateUserRole, resendInvite, UserData } from '../../services/adminService';
-import { Loader2, Search, Edit2, Check, X, Shield, ShieldAlert, Coins, UserPlus, RefreshCw, Send, Mail } from 'lucide-react';
+import { getAllUsers, updateUserTokens, updateUserRole, resendInvite, deleteUser, UserData } from '../../services/adminService';
+import { Loader2, Search, Edit2, Check, X, Shield, ShieldAlert, Coins, UserPlus, RefreshCw, Send, Mail, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AddUserModal } from './AddUserModal';
+import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { supabase } from '../../services/supabaseClient';
 
 export const AdminDashboard: React.FC = () => {
@@ -16,6 +17,9 @@ export const AdminDashboard: React.FC = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showAddUserModal, setShowAddUserModal] = useState(false);
     const [resendingEmails, setResendingEmails] = useState<Record<string, boolean>>({});
+    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); // userId to delete
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
 
     // Edit Form State
     const [editForm, setEditForm] = useState<{
@@ -96,6 +100,30 @@ export const AdminDashboard: React.FC = () => {
             toastError(error.message || "Gagal mengirim ulang undangan.");
         } finally {
             setResendingEmails(prev => ({ ...prev, [email]: false }));
+        }
+    };
+
+    const handleDeleteClick = (user: UserData) => {
+        setUserToDelete({ id: user.user_id, email: user.email || 'Unknown User' });
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        
+        const userId = userToDelete.id;
+        setDeleteConfirm(userId);
+        setShowDeleteModal(false); // Close modal immediately, show loader on button
+
+        try {
+            await deleteUser(userId);
+            success('User berhasil dihapus.');
+            loadUsers();
+        } catch (error: any) {
+            toastError('Gagal menghapus user: ' + error.message);
+        } finally {
+            setDeleteConfirm(null);
+            setUserToDelete(null);
         }
     };
 
@@ -254,6 +282,17 @@ export const AdminDashboard: React.FC = () => {
                                                     <button onClick={() => handleEditClick(user)} className="p-1.5 text-slate-400 hover:text-brand-600 transition-colors">
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteClick(user)} 
+                                                        className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                                                        disabled={deleteConfirm === user.user_id}
+                                                    >
+                                                        {deleteConfirm === user.user_id ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="w-4 h-4" />
+                                                        )}
+                                                    </button>
                                                 </div>
                                             )}
                                         </td>
@@ -266,6 +305,14 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <AddUserModal isOpen={showAddUserModal} onClose={() => setShowAddUserModal(false)} onSuccess={loadUsers} />
+            <ConfirmDeleteModal 
+                isOpen={showDeleteModal} 
+                onClose={() => setShowDeleteModal(false)} 
+                onConfirm={handleDeleteUser} 
+                itemName={userToDelete?.email || 'User'} 
+                message="Apakah Anda yakin ingin menghapus user ini?"
+                warning="⚠️ User akan dihapus permanen. Semua KPI library yang dimiliki user ini juga akan terhapus."
+            />
         </div>
     );
 };

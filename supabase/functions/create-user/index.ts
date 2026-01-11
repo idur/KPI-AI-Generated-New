@@ -51,9 +51,9 @@ serve(async (req) => {
 
         // 2. Initialize their token record with custom amount
         // The trigger might have run, so we upsert
-        const initialTokens = tokens || 10
+        const initialTokens = typeof tokens === 'number' ? tokens : 10;
 
-        console.log(`[DEBUG] Upserting tokens for ${user.user.id} / ${email}`);
+        console.log(`[DEBUG] Upserting tokens for ${user.user.id} / ${email} with amount: ${initialTokens}`);
 
         const { error: tokenError } = await supabaseAdmin
             .from('user_tokens')
@@ -61,14 +61,55 @@ serve(async (req) => {
                 user_id: user.user.id,
                 email: email,
                 free_tokens: initialTokens,
-                role: 'user', // Default role for added user
-                status: 'invited', // Track that they haven't finished setup
+                role: 'user',
+                status: 'invited',
                 last_reset_date: new Date().toISOString().split('T')[0]
-            }, { onConflict: 'user_id' })
+            }, { onConflict: 'user_id' });
 
         if (tokenError) {
             console.error("Error setting initial tokens:", tokenError)
             // Non-blocking error, user is created
+        }
+
+        // Robust verification and override to prevent race conditions
+        const { data: verifyRecord, error: verifyError } = await supabaseAdmin
+            .from('user_tokens')
+            .select('id, free_tokens')
+            .eq('user_id', user.user.id)
+            .single();
+
+        if (!verifyError && verifyRecord) {
+            if (verifyRecord.free_tokens !== initialTokens) {
+                console.log(`[DEBUG] Overriding free_tokens from ${verifyRecord.free_tokens} -> ${initialTokens} for ${email}`);
+                const { error: forceUpdateError } = await supabaseAdmin
+                    .from('user_tokens')
+                    .update({ free_tokens: initialTokens })
+                    .eq('id', verifyRecord.id);
+                if (forceUpdateError) {
+                    console.error("[DEBUG] Force update free_tokens failed:", forceUpdateError);
+                } else {
+                    console.log("[DEBUG] Force update free_tokens succeeded");
+                }
+            } else {
+                console.log("[DEBUG] free_tokens verified as correct:", verifyRecord.free_tokens);
+            }
+        } else {
+            console.warn("[DEBUG] Verification select failed or record missing; attempting insert fallback");
+            const { error: insertFallbackError } = await supabaseAdmin
+                .from('user_tokens')
+                .insert({
+                    user_id: user.user.id,
+                    email: email,
+                    free_tokens: initialTokens,
+                    role: 'user',
+                    status: 'invited',
+                    last_reset_date: new Date().toISOString().split('T')[0]
+                });
+            if (insertFallbackError) {
+                console.error("[DEBUG] Insert fallback failed:", insertFallbackError);
+            } else {
+                console.log("[DEBUG] Insert fallback succeeded");
+            }
         }
 
         return new Response(

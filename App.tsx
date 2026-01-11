@@ -149,6 +149,16 @@ function AppContent() {
     loadLibrary();
   }, [mode]);
 
+  // Force SetPassword if user status is 'invited' but somehow logged in (e.g. magic link)
+  // This overrides the normal route if status is strictly 'invited'
+  useEffect(() => {
+    if (user && isInvited && mode !== AppMode.ADMIN_DASHBOARD) { // Allow admin to access dashboard though
+       // Actually, if invited, they shouldn't access anything until password set
+       // But 'isInvited' state in this component is derived from getTokenState
+       // We should handle the routing redirect here
+    }
+  }, [user, isInvited]);
+
   if (roleCheckLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">

@@ -6,9 +6,11 @@ interface ConfirmDeleteModalProps {
     onClose: () => void;
     onConfirm: () => void;
     itemName: string;
+    message?: string; // Optional custom message
+    warning?: string; // Optional custom warning
 }
 
-export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ isOpen, onClose, onConfirm, itemName }) => {
+export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ isOpen, onClose, onConfirm, itemName, message, warning }) => {
     if (!isOpen) return null;
 
     return (
@@ -26,13 +28,13 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ isOpen, 
 
                 <div className="p-6">
                     <p className="text-slate-700 mb-2">
-                        Apakah Anda yakin ingin menghapus koleksi KPI ini?
+                        {message || "Apakah Anda yakin ingin menghapus koleksi KPI ini?"}
                     </p>
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
                         <p className="font-semibold text-slate-900">{itemName}</p>
                     </div>
                     <p className="text-sm text-red-600">
-                        ⚠️ Tindakan ini tidak dapat dibatalkan.
+                        {warning || "⚠️ Tindakan ini tidak dapat dibatalkan."}
                     </p>
                 </div>
 

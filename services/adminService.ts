@@ -50,3 +50,14 @@ export const resendInvite = async (email: string) => {
     
     return data;
 };
+
+export const deleteUser = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+    });
+
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    
+    return data;
+};
