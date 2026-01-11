@@ -87,11 +87,15 @@ export const SetPassword: React.FC = () => {
 
             if (error) throw error;
 
-            // Update status to active in user_tokens
-            await supabase
-                .from('user_tokens')
-                .update({ status: 'active' })
-                .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+            // Get current user ID reliably
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // Update status to active in user_tokens
+                await supabase
+                    .from('user_tokens')
+                    .update({ status: 'active' })
+                    .eq('user_id', user.id);
+            }
 
             setMessage({ type: 'success', text: 'Password updated successfully! You can now access your account.' });
 
