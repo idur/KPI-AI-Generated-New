@@ -36,7 +36,7 @@ export const generateKPIsFromJobDescription = async (
   const ai = new GoogleGenAI({ apiKey: apiKey });
 
   const langInstruction = language === 'en'
-    ? "Use professional English."
+    ? "IMPORTANT: Output ALL content strictly in ENGLISH. Do not mix with Indonesian. Use professional business English."
     : "Gunakan Bahasa Indonesia yang profesional.";
 
   // Default Prompt
@@ -50,7 +50,19 @@ export const generateKPIsFromJobDescription = async (
     1. Detail KPI standar (definisi, rumus, sumber data).
     2. Target Audiens: Siapa stakeholder utama yang berkepentingan dengan metrik ini?
     3. Tantangan Pengukuran: Apa kesulitan potensial, bias, atau hambatan teknis dalam mengukur KPI ini secara akurat?
-    4. Rekomendasi Skema Skoring: Berikan panduan lengkap cara memberikan nilai/skor untuk KPI ini. Pilih SATU metode yang paling relevan (Persentase, Skala Khusus 1-5, Skala 0-1, atau Simple Scoring). Jelaskan definisinya, berikan tabel/kriteria penilaian yang jelas, dan contoh perhitungan.
+    4. Rekomendasi Skema Skoring: Berikan panduan lengkap cara memberikan nilai/skor untuk KPI ini. 
+       FORMAT KELUARAN YANG WAJIB DIGUNAKAN (Rich Text / HTML-like):
+       Gunakan <ul> dan <li> untuk membuat bullet points.
+       Gunakan <b> atau <strong> untuk menebalkan kata "Score".
+       Contoh Format:
+       <ul>
+         <li><b>Score 5</b>: >= 110% dari target.</li>
+         <li><b>Score 4</b>: 100% - 109% dari target.</li>
+         <li><b>Score 3</b>: 90% - 99% dari target.</li>
+         <li><b>Score 2</b>: 80% - 89% dari target.</li>
+         <li><b>Score 1</b>: < 80% dari target.</li>
+       </ul>
+       Jangan gunakan markdown (**) di dalam string ini, gunakan tag HTML standar agar mudah dirender di frontend.
     
     ${langInstruction}
   `;

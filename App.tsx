@@ -698,6 +698,7 @@ function AppContent() {
             onSaveToLibrary={handleSaveToLibrary}
             onUpdateKPI={handleUpdateKPI}
             onJobTitleChange={(newTitle) => setCurrentJobTitle(newTitle)}
+            language={language}
           />
         )}
       </main>

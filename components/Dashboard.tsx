@@ -12,9 +12,10 @@ interface DashboardProps {
   onSaveToLibrary: (kpisToSave: KPI[]) => void;
   onUpdateKPI?: (kpi: KPI) => void;
   onJobTitleChange?: (newTitle: string) => void;
+  language?: 'id' | 'en'; // Add language prop
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLibrary, onUpdateKPI, onJobTitleChange }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLibrary, onUpdateKPI, onJobTitleChange, language = 'id' }) => {
   // Filter States
   const [selectedPerspective, setSelectedPerspective] = useState<string>('All');
   const [selectedRole, setSelectedRole] = useState<string>('All');
@@ -478,6 +479,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ kpis, jobTitle, onSaveToLi
             isSelected={selectedIds.has(kpi.id)}
             onToggleSelect={() => toggleSelection(kpi.id)}
             onUpdate={onUpdateKPI}
+            language={language}
           />
         ))}
       </div>

@@ -8,12 +8,33 @@ interface KPICardProps {
   isSelected: boolean;
   onToggleSelect: () => void;
   onUpdate?: (updatedKpi: KPI) => void;
+  language?: 'id' | 'en'; // Add language prop
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelect, onUpdate }) => {
+export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelect, onUpdate, language = 'id' }) => {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedKpi, setEditedKpi] = useState<KPI>(kpi);
+
+  // Translations for labels
+  const t = {
+    polarity: language === 'en' ? 'Polarity' : 'Polaritas',
+    unit: language === 'en' ? 'Unit' : 'Satuan',
+    measurement: language === 'en' ? 'Measurement' : 'Pengukuran',
+    viewDetail: language === 'en' ? 'View Full Details' : 'Lihat Detail Lengkap',
+    task: language === 'en' ? 'Tasks & Responsibilities' : 'Tugas & Tanggung Jawab',
+    description: language === 'en' ? 'Detailed Description' : 'Deskripsi Detail',
+    definition: language === 'en' ? 'Operational Definition' : 'Definisi Operasional',
+    dataSource: language === 'en' ? 'Data Source' : 'Sumber Data',
+    formula: language === 'en' ? 'Calculation Formula' : 'Formula Perhitungan',
+    targetAudience: language === 'en' ? 'Target Audience' : 'Target Audiens',
+    challenges: language === 'en' ? 'Measurement Challenges' : 'Tantangan Pengukuran',
+    scoring: language === 'en' ? 'Scoring Scheme Recommendation' : 'Rekomendasi Skema Skoring',
+    cancel: language === 'en' ? 'Cancel' : 'Batal',
+    save: language === 'en' ? 'Save Changes' : 'Simpan Perubahan',
+    close: language === 'en' ? 'Close' : 'Tutup',
+    edit: language === 'en' ? 'Edit KPI' : 'Edit KPI'
+  };
 
   useEffect(() => {
     setEditedKpi(kpi);
@@ -209,7 +230,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2 text-slate-400 mb-1">
                     <Activity className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Polaritas</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t.polarity}</span>
                   </div>
                   {isEditing ? (
                     <select
@@ -227,7 +248,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2 text-slate-400 mb-1">
                     <Target className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Satuan</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t.unit}</span>
                   </div>
                   {isEditing ? (
                     <input
@@ -243,7 +264,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2 text-slate-400 mb-1">
                     <BarChart2 className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Pengukuran</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t.measurement}</span>
                   </div>
                   {isEditing ? (
                     <input
@@ -265,7 +286,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   <div className="bg-brand-50/50 p-4 rounded-xl border border-brand-100">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-brand-800 uppercase tracking-wide mb-2">
                       <ClipboardList className="w-4 h-4 text-brand-600" />
-                      Tugas & Tanggung Jawab
+                      {t.task}
                     </h4>
                     <p className="text-brand-900 font-medium leading-relaxed italic">
                       "{kpi.task}"
@@ -277,7 +298,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 <div>
                   <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                     <Info className="w-4 h-4 text-brand-500" />
-                    Deskripsi Detail
+                    {t.description}
                   </h4>
                   {isEditing ? (
                     <textarea
@@ -296,7 +317,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   <div>
                     <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                       <Book className="w-4 h-4 text-brand-500" />
-                      Definisi Operasional
+                      {t.definition}
                     </h4>
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm text-slate-700 leading-relaxed h-full">
                       {isEditing ? (
@@ -314,7 +335,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   <div>
                     <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                       <Database className="w-4 h-4 text-brand-500" />
-                      Sumber Data
+                      {t.dataSource}
                     </h4>
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm text-slate-700 leading-relaxed h-full">
                       {isEditing ? (
@@ -333,7 +354,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                 <div>
                   <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                     <Calculator className="w-4 h-4 text-brand-500" />
-                    Formula Perhitungan
+                    {t.formula}
                   </h4>
                   <div className="bg-slate-900 text-slate-50 p-4 rounded-lg font-mono text-sm shadow-inner overflow-x-auto">
                     {isEditing ? (
@@ -354,7 +375,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                       <div>
                         <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                           <Users className="w-4 h-4 text-brand-500" />
-                          Target Audiens
+                          {t.targetAudience}
                         </h4>
                         <div className="text-slate-700 text-sm bg-slate-50 p-4 rounded-lg border border-slate-200 leading-relaxed h-full">
                           {isEditing ? (
@@ -373,7 +394,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                       <div>
                         <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">
                           <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          Tantangan Pengukuran
+                          {t.challenges}
                         </h4>
                         <div className="text-slate-700 text-sm bg-slate-50 p-4 rounded-lg border border-slate-200 leading-relaxed h-full">
                           {isEditing ? (
@@ -396,7 +417,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   <div className="pt-6 border-t border-slate-100 mt-6">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
                       <Award className="w-4 h-4 text-brand-600" />
-                      Rekomendasi Skema Skoring
+                      {t.scoring}
                     </h4>
                     <div className="text-slate-700 text-sm bg-blue-50/50 p-6 rounded-xl border border-blue-100 leading-relaxed shadow-sm">
                       {isEditing ? (
@@ -408,12 +429,10 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                           placeholder="Masukkan rekomendasi skema skoring..."
                         />
                       ) : (
-                        <div className="prose prose-sm max-w-none text-slate-700">
-                          {/* We use a simple whitespace-pre-wrap div but styled better */}
-                          <div className="whitespace-pre-wrap font-normal leading-7">
-                            {kpi.scoringSystem}
-                          </div>
-                        </div>
+                        <div 
+                          className="prose prose-sm max-w-none text-slate-700 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1 [&>ul>li>b]:text-slate-900 [&>ul>li>strong]:text-slate-900"
+                          dangerouslySetInnerHTML={{ __html: kpi.scoringSystem || '' }}
+                        />
                       )}
                     </div>
                   </div>
@@ -431,14 +450,14 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                     className="px-5 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    Batal
+                    {t.cancel}
                   </button>
                   <button
                     onClick={handleSave}
                     className="px-5 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-2 shadow-sm"
                   >
                     <Save className="w-4 h-4" />
-                    Simpan Perubahan
+                    {t.save}
                   </button>
                 </>
               ) : (
@@ -446,7 +465,7 @@ export const KPICard: React.FC<KPICardProps> = ({ kpi, isSelected, onToggleSelec
                   onClick={() => setShowModal(false)}
                   className="px-5 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
                 >
-                  Tutup
+                  {t.close}
                 </button>
               )}
             </div>
