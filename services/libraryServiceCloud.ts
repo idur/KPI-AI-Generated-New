@@ -64,10 +64,10 @@ export const updateLibraryTitle = async (id: string, newTitle: string): Promise<
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return; // No local fallback for title editing yet
 
-    // 1. Get current item to check if original_job_title is set
+    // 1. Get current item to check if original_job_title is set and get kpi_data
     const { data: current, error: fetchError } = await supabase
         .from('user_library')
-        .select('job_title, original_job_title')
+        .select('job_title, original_job_title, kpi_data')
         .eq('id', id)
         .single();
 
@@ -78,6 +78,14 @@ export const updateLibraryTitle = async (id: string, newTitle: string): Promise<
     // If this is the first edit, save the original title
     if (!current.original_job_title) {
         updateData.original_job_title = current.job_title;
+    }
+
+    // Update jobDescription in all KPIs
+    if (current.kpi_data && Array.isArray(current.kpi_data)) {
+        updateData.kpi_data = current.kpi_data.map((kpi: any) => ({
+            ...kpi,
+            jobDescription: newTitle
+        }));
     }
 
     const { error } = await supabase
@@ -101,15 +109,25 @@ export const revertLibraryTitle = async (id: string): Promise<void> => {
 
     const { data: current, error: fetchError } = await supabase
         .from('user_library')
-        .select('job_title, original_job_title')
+        .select('job_title, original_job_title, kpi_data')
         .eq('id', id)
         .single();
 
     if (fetchError || !current || !current.original_job_title) return; // Nothing to revert
 
+    const revertData: any = { job_title: current.original_job_title };
+
+    // Revert jobDescription in all KPIs
+    if (current.kpi_data && Array.isArray(current.kpi_data)) {
+        revertData.kpi_data = current.kpi_data.map((kpi: any) => ({
+            ...kpi,
+            jobDescription: current.original_job_title
+        }));
+    }
+
     const { error } = await supabase
         .from('user_library')
-        .update({ job_title: current.original_job_title })
+        .update(revertData)
         .eq('id', id)
         .eq('user_id', user.id);
 

@@ -410,8 +410,10 @@ function AppContent() {
   };
 
   const handleLoadLibraryItem = (item: LibraryEntry) => {
-    setKpis(item.kpis);
-    setMasterKpis(item.kpis);
+    // Ensure all KPIs inherit the current (potentially edited) role title
+    const kpisWithCurrentRole = item.kpis.map(k => ({ ...k, jobDescription: item.jobTitle }));
+    setKpis(kpisWithCurrentRole);
+    setMasterKpis(kpisWithCurrentRole);
     setCurrentJobTitle(item.jobTitle);
     setJobInput(item.jobTitle); // Update input field context
     setCurrentLibraryId(item.id); // Set current library ID

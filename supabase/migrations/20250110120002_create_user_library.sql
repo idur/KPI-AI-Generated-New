@@ -11,21 +11,25 @@ create table if not exists public.user_library (
 alter table public.user_library enable row level security;
 
 -- Policies
+drop policy if exists "Users can view their own library items" on public.user_library;
 create policy "Users can view their own library items"
 on public.user_library for select
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own library items" on public.user_library;
 create policy "Users can insert their own library items"
 on public.user_library for insert
 to authenticated
 with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update their own library items" on public.user_library;
 create policy "Users can update their own library items"
 on public.user_library for update
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own library items" on public.user_library;
 create policy "Users can delete their own library items"
 on public.user_library for delete
 to authenticated
