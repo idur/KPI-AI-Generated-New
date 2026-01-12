@@ -94,7 +94,9 @@ export const generateKPIsFromJobDescription = async (
         Analisis dokumen Job Description yang dilampirkan ini.
         ${jobDescription ? `Konteks tambahan atau Judul Posisi: "${jobDescription}".` : ''}
         
-        Berdasarkan dokumen tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
+        TUGAS UTAMA:
+        1. Identifikasi secara spesifik Nama Role / Jabatan yang paling sesuai dengan konten dokumen. Jika tidak tertulis eksplisit, LAKUKAN ANALISIS dan PREDIKSI nama role yang paling akurat berdasarkan tugas-tugas yang disebutkan. Masukkan ini ke field 'roleName'.
+        2. Berdasarkan role tersebut, buatlah daftar Key Performance Indicators (KPI) yang komprehensif dan relevan.
         ${limit ? `BATASAN PENTING: Buatlah MINIMAL 10 KPI dan MAKSIMAL ${limit} KPI.` : 'Buatlah minimal 10 KPI.'}
         
         Pastikan KPI mencakup 4 perspektif Balanced Scorecard.
@@ -154,17 +156,23 @@ export const generateKPIsFromJobDescription = async (
 
       if (forcedJobLabel) {
         jobDescLabel = forcedJobLabel;
-      } else if (isTaskBasedMode) {
-        // Priority 1: AI Extracted Role Name
-        if (item.roleName && item.roleName !== "Unknown") {
-          jobDescLabel = item.roleName;
-        }
-        // Priority 2: Fallback to context
-        else {
-          jobDescLabel = jobDescription.split('\n')[0].replace('Role: ', '').trim() || "CSV Import";
-        }
       } else {
-        jobDescLabel = jobDescription || "Uploaded Document";
+        // Priority 1: AI Extracted Role Name (from both CSV and Doc modes)
+        if (item.roleName && item.roleName !== "Unknown" && item.roleName.length > 2) {
+            jobDescLabel = item.roleName;
+        } 
+        // Priority 2: Fallback logic
+        else if (isTaskBasedMode) {
+            jobDescLabel = jobDescription.split('\n')[0].replace('Role: ', '').trim() || "CSV Import";
+        } else {
+            // For standard mode, if AI failed to identify, fallback to input or filename
+            // We can try to be smarter here if jobDescription is just "Generated Result" or "Analisis..."
+            if (jobDescription && !jobDescription.startsWith("Generated") && !jobDescription.startsWith("Analisis")) {
+                jobDescLabel = jobDescription;
+            } else {
+                 jobDescLabel = "Untitled Role";
+            }
+        }
       }
 
       return {

@@ -348,6 +348,11 @@ function AppContent() {
 
         const result = await generateKPIsFromJobDescription(finalJobInput, fileData, false, 20, language, onProgress);
 
+        // Update Job Title from AI result if available
+        if (result.length > 0 && result[0].jobDescription && result[0].jobDescription !== "Untitled Role" && result[0].jobDescription !== "Uploaded Document") {
+          setCurrentJobTitle(result[0].jobDescription);
+        }
+
         // Deduct Tokens (1 Token per request, regardless of KPI count)
         const cost = 1;
         await spendTokens(cost);
