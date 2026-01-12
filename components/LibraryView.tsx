@@ -1,22 +1,31 @@
 import React, { useState, useMemo } from 'react';
 import { LibraryEntry, KPI } from '../types';
-import { Search, Grid, List, Filter, Trash2, ArrowRight, BookOpen, Calendar, Table as TableIcon, LayoutGrid, Download } from 'lucide-react';
+import { Search, Grid, List, Filter, Trash2, ArrowRight, BookOpen, Calendar, Table as TableIcon, LayoutGrid, Download, Edit2, Check, X, RotateCcw, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { updateLibraryTitle, revertLibraryTitle } from '../services/libraryServiceCloud';
+import { useToast } from '../contexts/ToastContext';
 
 interface LibraryViewProps {
     items: LibraryEntry[];
     onLoad: (item: LibraryEntry) => void;
     onDelete: (e: React.MouseEvent, id: string) => void;
+    onRefresh: () => void;
 }
 
 type ViewMode = 'roles' | 'kpis';
 
-export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelete }) => {
+export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelete, onRefresh }) => {
+    const { success, error: toastError } = useToast();
     const [viewMode, setViewMode] = useState<ViewMode>('roles');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterRole, setFilterRole] = useState('');
     const [filterPerspective, setFilterPerspective] = useState('');
     const [filterType, setFilterType] = useState('');
+
+    // Editing State
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     // Extract unique options for filters
     const uniqueRoles = useMemo(() => {
@@ -94,6 +103,73 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelet
         setFilterRole('');
         setFilterPerspective('');
         setFilterType('');
+    };
+
+    // Editing Handlers
+    const handleEditClick = (e: React.MouseEvent, item: LibraryEntry) => {
+        e.stopPropagation();
+        setEditingId(item.id);
+        // Clean title for editing if it has the "Role: ..." prefix
+        const cleanTitle = item.jobTitle.length > 50 && item.jobTitle.includes('Role:')
+            ? item.jobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || item.jobTitle
+            : item.jobTitle;
+        setEditTitle(cleanTitle);
+    };
+
+    const handleCancelEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingId(null);
+        setEditTitle('');
+    };
+
+    const handleSaveTitle = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        
+        // Validation
+        const trimmedTitle = editTitle.trim();
+        if (!trimmedTitle) {
+            toastError("Nama role tidak boleh kosong.");
+            return;
+        }
+        
+        if (trimmedTitle.length > 100) {
+            toastError("Nama role terlalu panjang (maks 100 karakter).");
+            return;
+        }
+
+        const validNameRegex = /^[a-zA-Z0-9\s\-_.,()&/]+$/;
+        if (!validNameRegex.test(trimmedTitle)) {
+            toastError("Nama mengandung karakter yang tidak diperbolehkan.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await updateLibraryTitle(id, trimmedTitle);
+            success("Nama role berhasil diperbarui.");
+            setEditingId(null);
+            onRefresh();
+        } catch (err: any) {
+            toastError("Gagal memperbarui nama role.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRevertTitle = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!window.confirm("Kembalikan ke nama asli (generate sistem)?")) return;
+
+        setIsSaving(true);
+        try {
+            await revertLibraryTitle(id);
+            success("Nama role dikembalikan ke awal.");
+            onRefresh();
+        } catch (err: any) {
+            toastError("Gagal mengembalikan nama role.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleExportAll = () => {
@@ -277,20 +353,70 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ items, onLoad, onDelet
                                         <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
                                             <BookOpen className="w-5 h-5" />
                                         </div>
-                                        <button
-                                            onClick={(e) => onDelete(e, item.id)}
-                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {item.originalJobTitle && item.originalJobTitle !== item.jobTitle && editingId !== item.id && (
+                                                <button
+                                                    onClick={(e) => handleRevertTitle(e, item.id)}
+                                                    className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    title="Kembalikan ke nama asli"
+                                                >
+                                                    <RotateCcw className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {editingId !== item.id && (
+                                                <button
+                                                    onClick={(e) => handleEditClick(e, item)}
+                                                    className="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                                                    title="Edit Nama"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => onDelete(e, item.id)}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-brand-600 transition-colors">
-                                        {item.jobTitle.length > 50 && item.jobTitle.includes('Role:') 
-                                            ? item.jobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || item.jobTitle 
-                                            : item.jobTitle}
-                                    </h3>
+                                    {editingId === item.id ? (
+                                        <div className="mb-2" onClick={e => e.stopPropagation()}>
+                                            <input
+                                                type="text"
+                                                value={editTitle}
+                                                onChange={e => setEditTitle(e.target.value)}
+                                                className="w-full px-2 py-1 border border-brand-300 rounded focus:ring-2 focus:ring-brand-500 outline-none text-lg font-bold text-slate-900"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <button
+                                                    onClick={(e) => handleSaveTitle(e, item.id)}
+                                                    disabled={isSaving}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-brand-600 text-white rounded text-xs font-medium hover:bg-brand-700"
+                                                >
+                                                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                    Simpan
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    disabled={isSaving}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium hover:bg-slate-200"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                    Batal
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-brand-600 transition-colors">
+                                            {item.jobTitle.length > 50 && item.jobTitle.includes('Role:')
+                                                ? item.jobTitle.split('Role:')[1]?.split('Tugas')[0]?.trim() || item.jobTitle
+                                                : item.jobTitle}
+                                        </h3>
+                                    )}
 
                                     <div className="flex items-center gap-4 text-sm text-slate-500 mb-6">
                                         <div className="flex items-center gap-1.5">

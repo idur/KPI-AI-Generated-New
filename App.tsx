@@ -139,13 +139,14 @@ function AppContent() {
   }, [user, refreshTokens]);
 
   // Load library when navigating to library page
+  const loadLibrary = async () => {
+    if (mode === AppMode.MY_LIBRARY) {
+      const items = await getLibrary();
+      setLibraryItems(items);
+    }
+  };
+
   useEffect(() => {
-    const loadLibrary = async () => {
-      if (mode === AppMode.MY_LIBRARY) {
-        const items = await getLibrary();
-        setLibraryItems(items);
-      }
-    };
     loadLibrary();
   }, [mode]);
 
@@ -664,6 +665,7 @@ function AppContent() {
               items={libraryItems}
               onLoad={handleLoadLibraryItem}
               onDelete={handleDeleteLibraryItem}
+              onRefresh={loadLibrary}
             />
           </div>
         )}

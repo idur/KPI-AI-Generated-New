@@ -40,6 +40,7 @@ export interface SheetConfig {
 export interface LibraryEntry {
   id: string;
   jobTitle: string;
+  originalJobTitle?: string; // For reverting changes
   createdAt: number;
   updatedAt: number;
   kpis: KPI[];

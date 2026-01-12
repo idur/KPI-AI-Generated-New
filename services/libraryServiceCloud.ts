@@ -40,10 +40,82 @@ export const getLibrary = async (): Promise<LibraryEntry[]> => {
     return data.map(item => ({
         id: item.id,
         jobTitle: item.job_title,
+        originalJobTitle: item.original_job_title,
         kpis: item.kpi_data,
         createdAt: new Date(item.created_at).getTime(),
         updatedAt: new Date(item.created_at).getTime() // Using created_at as we don't have updated_at in DB
     }));
+};
+
+const logLibraryChange = async (libraryId: string, action: string, oldValue: any, newValue: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('library_logs').insert({
+        library_id: libraryId,
+        user_id: user.id,
+        action,
+        old_value: oldValue,
+        new_value: newValue
+    });
+};
+
+export const updateLibraryTitle = async (id: string, newTitle: string): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // No local fallback for title editing yet
+
+    // 1. Get current item to check if original_job_title is set
+    const { data: current, error: fetchError } = await supabase
+        .from('user_library')
+        .select('job_title, original_job_title')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !current) throw new Error('Item not found');
+
+    const updateData: any = { job_title: newTitle };
+    
+    // If this is the first edit, save the original title
+    if (!current.original_job_title) {
+        updateData.original_job_title = current.job_title;
+    }
+
+    const { error } = await supabase
+        .from('user_library')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error updating title:', error);
+        throw error;
+    }
+
+    // Log it
+    await logLibraryChange(id, 'update_title', { title: current.job_title }, { title: newTitle });
+};
+
+export const revertLibraryTitle = async (id: string): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: current, error: fetchError } = await supabase
+        .from('user_library')
+        .select('job_title, original_job_title')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !current || !current.original_job_title) return; // Nothing to revert
+
+    const { error } = await supabase
+        .from('user_library')
+        .update({ job_title: current.original_job_title })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    await logLibraryChange(id, 'revert_title', { title: current.job_title }, { title: current.original_job_title });
 };
 
 export const saveToLibrary = async (entry: LibraryEntry): Promise<void> => {
@@ -62,6 +134,7 @@ export const saveToLibrary = async (entry: LibraryEntry): Promise<void> => {
         .insert({
             user_id: user.id,
             job_title: entry.jobTitle,
+            original_job_title: entry.originalJobTitle, // Support explicit original title if provided
             kpi_data: entry.kpis
         });
 
