@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { Coins, CreditCard, X, Loader2 } from 'lucide-react';
-import { useTokens } from '../services/tokenServiceCloud';
-import { initiatePayment } from '../services/paymentService';
+import { Coins, CreditCard, X, Loader2, ExternalLink } from 'lucide-react';
+import { useTokens, MAYAR_CONFIG } from '../services/tokenServiceCloud';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
-import { ConfirmationModal } from './ConfirmationModal';
 
 interface BuyTokenModalProps {
     isOpen: boolean;
@@ -22,80 +19,75 @@ const PACKAGES = [
 export const BuyTokenModal: React.FC<BuyTokenModalProps> = ({ isOpen, onClose }) => {
     const { free, paid } = useTokens();
     const { user } = useAuth();
-    const [isProcessing, setIsProcessing] = useState(false);
-
+    
     if (!isOpen) return null;
 
-    const handleBuyPackage = async (amount: number, price: number, priceLabel: string) => {
+    const handleMayarRedirect = () => {
         if (!user) {
             alert("Silakan login terlebih dahulu untuk melakukan pembelian.");
             return;
         }
-
-        if (confirm(`Beli ${amount} Token seharga ${priceLabel}? Anda akan diarahkan ke halaman pembayaran DOKU.`)) {
-            setIsProcessing(true);
-            try {
-                // Generate secure order ID
-                const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-                const paymentUrl = await initiatePayment({
-                    orderId,
-                    amount: price,
-                    customerEmail: user.email || 'customer@example.com',
-                    customerName: user.user_metadata?.full_name || user.email || 'Customer',
-                });
-
-                // Redirect to DOKU Payment Page
-                window.location.href = paymentUrl;
-
-            } catch (error: any) {
-                console.error("Payment Error:", error);
-                alert(`Gagal memproses pembayaran: ${error.message}`);
-                setIsProcessing(false);
-            }
+        
+        // Redirect to Mayar Payment Link
+        // We append email to pre-fill if supported by Mayar link (often ?email=...)
+        const url = new URL(MAYAR_CONFIG.paymentUrl);
+        if (user.email) {
+            url.searchParams.append('email', user.email);
+            url.searchParams.append('name', user.user_metadata?.full_name || '');
+            // Pass customerId if needed by Mayar to auto-assign credit
+            url.searchParams.append('custom_field_1', user.id); // Example: Pass UserID as custom field
         }
-    }
+        
+        window.open(url.toString(), '_blank');
+        onClose();
+        alert("Silakan selesaikan pembayaran di halaman Mayar. Saldo token Anda akan bertambah otomatis setelah pembayaran berhasil dikonfirmasi.");
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative">
-                {isProcessing && (
-                    <div className="absolute inset-0 z-50 bg-white/80 flex flex-col items-center justify-center">
-                        <Loader2 className="w-10 h-10 text-brand-600 animate-spin mb-4" />
-                        <p className="text-slate-600 font-medium">Menghubungkan ke DOKU...</p>
-                    </div>
-                )}
-
+                
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <Coins className="w-6 h-6 text-amber-500" />
                         Top Up Token
                     </h3>
-                    <button onClick={onClose} disabled={isProcessing} className="text-slate-400 hover:text-slate-600 disabled:opacity-50">
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                <div className="p-8 text-center space-y-4">
-                    <div className="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Coins className="w-8 h-8 text-amber-600" />
+                <div className="p-8 text-center space-y-6">
+                    <div className="bg-amber-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                        <Coins className="w-10 h-10 text-amber-600" />
                     </div>
-                    <h4 className="text-lg font-semibold text-slate-800">
-                        Top Up Token
-                    </h4>
-                    <p className="text-slate-600">
-                        Fitur pembayaran otomatis sedang dalam pemeliharaan.
+                    
+                    <div>
+                        <h4 className="text-lg font-semibold text-slate-800 mb-2">
+                            Beli Token via Mayar
+                        </h4>
+                        <p className="text-slate-600 text-sm">
+                            Dapatkan token tambahan untuk generate KPI lebih banyak. 
+                            Pembayaran aman dan mudah melalui Mayar.
+                        </p>
+                    </div>
 
-                        Silahkan hubungi admin untuk menambah token Anda.
+                    <button 
+                        onClick={handleMayarRedirect}
+                        className="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+                    >
+                        <CreditCard className="w-5 h-5" />
+                        Beli Token Sekarang
+                        <ExternalLink className="w-4 h-4 opacity-80" />
+                    </button>
+                    
+                    <p className="text-xs text-slate-400">
+                        Anda akan diarahkan ke halaman pembayaran Mayar.
                     </p>
-
-                    <a href="https://wa.me/6285111031581" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-brand-600 font-medium hover:text-brand-700 mt-2">
-                        Hubungi Admin via WhatsApp
-                    </a>
                 </div>
 
-                <div className="p-4 bg-slate-50 text-center text-xs text-slate-500 flex items-center justify-center gap-1">
-                    <span>Powered by</span> <a href="http://betterandco.com" target="_blank" rel="noreferrer" className="font-bold text-slate-700 hover:text-brand-600">Better&Co.</a>
+                <div className="p-4 bg-slate-50 text-center text-xs text-slate-500 flex items-center justify-center gap-1 border-t border-slate-100">
+                    <span>Powered by</span> <a href="https://mayar.id" target="_blank" rel="noreferrer" className="font-bold text-pink-600 hover:text-pink-700">Mayar</a>
                 </div>
             </div>
         </div>
