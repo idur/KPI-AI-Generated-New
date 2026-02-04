@@ -7,6 +7,24 @@ import { AddUserModal } from './AddUserModal';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { supabase } from '../../services/supabaseClient';
 
+type WebhookEventRow = {
+    id: string;
+    provider: string;
+    event_type: string | null;
+    external_id: string | null;
+    customer_id: string | null;
+    customer_email: string | null;
+    user_id: string | null;
+    signature_present: boolean | null;
+    signature_valid: boolean | null;
+    http_status: number | null;
+    error_message: string | null;
+    processed: boolean | null;
+    result: string | null;
+    payload: any;
+    created_at: string;
+};
+
 export const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
     const { success, error: toastError, info } = useToast();
@@ -20,6 +38,9 @@ export const AdminDashboard: React.FC = () => {
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); // userId to delete
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
+
+    const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
+    const [webhookLoading, setWebhookLoading] = useState(false);
 
     // Edit Form State
     const [editForm, setEditForm] = useState<{
@@ -41,6 +62,50 @@ export const AdminDashboard: React.FC = () => {
         }
     };
 
+    const loadWebhookEvents = async () => {
+        setWebhookLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('webhook_events')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(25);
+
+            if (error) throw error;
+            setWebhookEvents((data as WebhookEventRow[]) || []);
+        } catch (e: any) {
+            console.error(e);
+            toastError(e?.message || 'Gagal memuat webhook events');
+        } finally {
+            setWebhookLoading(false);
+        }
+    };
+
+    const sendWebhookTest = async () => {
+        setWebhookLoading(true);
+        try {
+            const { data, error } = await supabase.functions.invoke('mayar-webhook', {
+                body: {
+                    event: 'testing',
+                    data: {
+                        id: `ui-test-${Date.now()}`,
+                        status: true,
+                        createdAt: Date.now()
+                    }
+                }
+            });
+
+            if (error) throw error;
+            success((data as any)?.message || 'Test webhook terkirim');
+            await loadWebhookEvents();
+        } catch (e: any) {
+            console.error(e);
+            toastError(e?.message || 'Gagal mengirim test webhook');
+        } finally {
+            setWebhookLoading(false);
+        }
+    };
+
     const handleSyncUsers = async () => {
         setSyncing(true);
         // info('Menyinkronkan status user...'); // No longer needed
@@ -58,13 +123,14 @@ export const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         loadUsers();
+        loadWebhookEvents();
     }, []);
 
     const handleEditClick = (u: UserData) => {
         setEditingId(u.user_id);
         setEditForm({
             freeTokens: u.freeTokens,
-            paidTokens: u.paidTokens,
+            paidTokens: u.legacyPaidTokens ?? u.paidTokens,
             role: u.role || 'user'
         });
     };
@@ -129,7 +195,8 @@ export const AdminDashboard: React.FC = () => {
 
     const filteredUsers = users.filter(u =>
         (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.user_id.includes(searchTerm)
+        u.user_id.includes(searchTerm) ||
+        String(u.mayarCustomerId || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -170,14 +237,118 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <div className="font-semibold text-slate-900">Webhook Verification</div>
+                        <div className="text-xs text-slate-500">Log event masuk dari Mayar untuk memastikan webhook berjalan.</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={sendWebhookTest}
+                            disabled={webhookLoading}
+                            className="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-70 disabled:cursor-not-allowed text-sm font-medium"
+                        >
+                            {webhookLoading ? 'Mengirim...' : 'Kirim Test'}
+                        </button>
+                        <button
+                            onClick={loadWebhookEvents}
+                            disabled={webhookLoading}
+                            className="p-2 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-70 disabled:cursor-not-allowed"
+                            title="Refresh"
+                        >
+                            <RefreshCw className={`w-4 h-4 text-slate-600 ${webhookLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                        <thead className="bg-white border-b border-slate-100 text-slate-500 font-medium">
+                            <tr>
+                                <th className="px-6 py-3">Waktu</th>
+                                <th className="px-6 py-3">Event</th>
+                                <th className="px-6 py-3">Email</th>
+                                <th className="px-6 py-3">Customer ID</th>
+                                <th className="px-6 py-3">User ID</th>
+                                <th className="px-6 py-3">Signature</th>
+                                <th className="px-6 py-3">Result</th>
+                                <th className="px-6 py-3">HTTP</th>
+                                <th className="px-6 py-3">Raw</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {webhookEvents.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="px-6 py-6 text-slate-500">
+                                        Belum ada event webhook. Klik "Kirim Test" atau pastikan webhook Mayar mengarah ke endpoint Supabase.
+                                    </td>
+                                </tr>
+                            ) : (
+                                webhookEvents.map((ev) => {
+                                    const signatureLabel = ev.signature_present
+                                        ? (ev.signature_valid ? 'Valid' : 'Invalid')
+                                        : 'Missing';
+                                    const signatureClass = ev.signature_present
+                                        ? (ev.signature_valid ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50')
+                                        : 'text-slate-600 bg-slate-100';
+                                    const statusClass = ev.error_message ? 'text-red-700' : 'text-slate-700';
+                                    const result = ev.error_message || ev.result || (ev.processed ? 'processed' : 'received');
+
+                                    return (
+                                        <tr key={ev.id} className="hover:bg-slate-50">
+                                            <td className="px-6 py-3 text-slate-600 whitespace-nowrap">
+                                                {new Date(ev.created_at).toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-3 text-slate-900 whitespace-nowrap">
+                                                {ev.event_type || '-'}
+                                            </td>
+                                            <td className="px-6 py-3 text-slate-700 whitespace-nowrap">
+                                                {ev.customer_email || '-'}
+                                            </td>
+                                            <td className="px-6 py-3 text-slate-700 whitespace-nowrap">
+                                                {ev.customer_id ? ev.customer_id.slice(0, 8) + '…' : '-'}
+                                            </td>
+                                            <td className="px-6 py-3 text-slate-700 whitespace-nowrap">
+                                                {ev.user_id ? ev.user_id.slice(0, 8) + '…' : '-'}
+                                            </td>
+                                            <td className="px-6 py-3 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${signatureClass}`}> 
+                                                    {signatureLabel}
+                                                </span>
+                                            </td>
+                                            <td className={`px-6 py-3 whitespace-nowrap ${statusClass}`}>
+                                                {result}
+                                            </td>
+                                            <td className="px-6 py-3 whitespace-nowrap text-slate-600">
+                                                {ev.http_status ?? '-'}
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <details>
+                                                    <summary className="cursor-pointer text-brand-600">lihat</summary>
+                                                    <pre className="mt-2 max-w-[720px] whitespace-pre-wrap break-words text-[11px] bg-slate-50 border border-slate-200 rounded p-3 text-slate-700">{JSON.stringify(ev.payload, null, 2)}</pre>
+                                                </details>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mt-6">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                             <tr>
                                 <th className="px-6 py-4">User Email</th>
+                                <th className="px-6 py-4">Mayar Customer ID</th>
                                 <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4">Free Tokens</th>
-                                <th className="px-6 py-4">Paid Tokens</th>
+                                <th className="px-6 py-4">Legacy Paid</th>
+                                <th className="px-6 py-4">Mayar Tokens</th>
+                                <th className="px-6 py-4">Paid Tokens (Total)</th>
                                 <th className="px-6 py-4">Total Balance</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -195,6 +366,13 @@ export const AdminDashboard: React.FC = () => {
                                                     <Mail className="w-3 h-3" />
                                                     Pending Invite
                                                 </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.mayarCustomerId ? (
+                                                <span className="text-slate-700 font-mono text-xs">{String(user.mayarCustomerId)}</span>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
@@ -235,15 +413,29 @@ export const AdminDashboard: React.FC = () => {
                                                     onChange={e => setEditForm({ ...editForm, paidTokens: parseInt(e.target.value) || 0 })}
                                                 />
                                             ) : (
+                                                <span className="text-slate-600">{user.legacyPaidTokens ?? 0}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-emerald-600 font-medium">{user.mayarAvailableTokens ?? 0}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {isEditing ? (
+                                                <span className="text-emerald-600 font-medium">
+                                                    {editForm.paidTokens + (user.mayarAvailableTokens ?? 0)}
+                                                </span>
+                                            ) : (
                                                 <span className="text-emerald-600 font-medium">{user.paidTokens}</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-slate-900">
-                                            {isEditing ? (
-                                                <span className="text-brand-600">{(editForm.freeTokens + editForm.paidTokens)}</span>
-                                            ) : (
-                                                <span>{(user.freeTokens + user.paidTokens)}</span>
-                                            )}
+                                            {(() => {
+                                                const paidTotal = isEditing
+                                                    ? (editForm.paidTokens + (user.mayarAvailableTokens ?? 0))
+                                                    : user.paidTokens;
+                                                const free = isEditing ? editForm.freeTokens : user.freeTokens;
+                                                return <span>{free + paidTotal}</span>;
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             {isEditing ? (

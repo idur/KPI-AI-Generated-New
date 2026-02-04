@@ -8,6 +8,8 @@ export interface UserData extends TokenState {
     user_id: string; // The auth.users id
     resendCount?: number;
     lastResendAt?: string;
+    legacyPaidTokens?: number;
+    mayarAvailableTokens?: number;
 }
 
 export const getAllUsers = async (): Promise<UserData[]> => {

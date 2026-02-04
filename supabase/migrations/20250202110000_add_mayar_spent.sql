@@ -1,0 +1,2 @@
+
+ALTER TABLE user_tokens ADD COLUMN IF NOT EXISTS mayar_spent_tokens INTEGER DEFAULT 0;

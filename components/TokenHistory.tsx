@@ -6,16 +6,30 @@ export const TokenHistory: React.FC = () => {
     const [history, setHistory] = useState<TokenTransaction[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadHistory();
-    }, []);
-
     const loadHistory = async () => {
         setLoading(true);
         const data = await getTokenHistory();
         setHistory(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadHistory();
+
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') loadHistory();
+        };
+
+        window.addEventListener('tokens-updated', loadHistory);
+        window.addEventListener('focus', loadHistory);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            window.removeEventListener('tokens-updated', loadHistory);
+            window.removeEventListener('focus', loadHistory);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, []);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -44,7 +58,7 @@ export const TokenHistory: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                {loading ? (
+                {loading && history.length === 0 ? (
                     <div className="p-12 text-center">
                         <Loader2 className="w-8 h-8 text-brand-600 animate-spin mx-auto mb-3" />
                         <p className="text-slate-500">Memuat riwayat...</p>
