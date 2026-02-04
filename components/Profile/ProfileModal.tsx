@@ -14,7 +14,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [mayarCustomerId, setMayarCustomerId] = useState('');
 
     const [formData, setFormData] = useState<UserProfile>({
         full_name: '',
@@ -39,14 +38,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 bio: meta.bio || '',
                 avatar_url: meta.avatar_url || ''
             });
-            supabase
-                .from('user_tokens')
-                .select('mayar_customer_id')
-                .eq('user_id', user.id)
-                .single()
-                .then(({ data }) => {
-                    setMayarCustomerId(data?.mayar_customer_id || '');
-                });
             setSuccess(false);
             setError(null);
             setActiveTab('profile');
@@ -113,13 +104,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             if (error) throw error;
 
             if (user) {
-                const trimmedMayarCustomerId = mayarCustomerId.trim();
                 const { error: mayarError } = await supabase
                     .from('user_tokens')
                     .upsert({
                         user_id: user.id,
-                        email: user.email,
-                        mayar_customer_id: trimmedMayarCustomerId.length > 0 ? trimmedMayarCustomerId : null
+                        email: user.email
                     }, { onConflict: 'user_id' });
                 if (mayarError) throw mayarError;
                 window.dispatchEvent(new Event('tokens-updated'));
@@ -296,18 +285,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                                         className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
                                     />
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Mayar Customer ID</label>
-                                <input
-                                    type="text"
-                                    value={mayarCustomerId}
-                                    onChange={(e) => setMayarCustomerId(e.target.value)}
-                                    placeholder="Contoh: 6a38cf26-6bab-42c8-92be-72f3a9fd4c33"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Jika token Mayar tidak terbaca, isi ID customer dari dashboard Mayar.</p>
                             </div>
 
                             {/* Bio */}
