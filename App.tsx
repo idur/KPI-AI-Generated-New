@@ -32,7 +32,8 @@ enum AppMode {
 // Helper to get current route from hash
 const getRouteFromHash = (): AppMode => {
   const hash = window.location.hash.slice(1); // Remove #
-  switch (hash) {
+  const path = hash.split('?')[0];
+  switch (path) {
     case '/library':
       return AppMode.MY_LIBRARY;
     case '/history':

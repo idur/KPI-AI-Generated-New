@@ -26,3 +26,6 @@ dist-ssr
 
 # Supabase CLI artifacts
 supabase/.temp/
+
+# Trae docs and local IDE artifacts
+.trae/
